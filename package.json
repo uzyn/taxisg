@@ -1,0 +1,27 @@
+{
+  "name": "taxisg",
+  "version": "1.0.0",
+  "description": "Unofficial SDK of taxi locations in Singapore",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uzyn/taxisg.git"
+  },
+  "keywords": [
+    "taxi",
+    "singapore",
+    "lta",
+    "gov",
+    "cab",
+    "taxicab"
+  ],
+  "author": "U-Zyn Chua <uzyn@zynesis.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/uzyn/taxisg/issues"
+  },
+  "homepage": "https://github.com/uzyn/taxisg#readme"
+}
