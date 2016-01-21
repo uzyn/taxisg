@@ -9,8 +9,8 @@ module.exports = function (data) {
         lat = '1.' + words[4] + words[5] + words[6];
         lng = '1' + words[0] + '.' + words[1] + words[2] + words[3];
         locations.push({
-          lat: lat,
-          lng: lng,
+          lat: Number(lat),
+          lng: Number(lng),
         });
       }
       words = [];
