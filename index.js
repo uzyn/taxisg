@@ -1,17 +1,42 @@
 var express = require('express');
 var app = express();
+var exec = require('child_process').exec;
+var fs = require('fs');
 var csvparse = require('csv-parse');
 var request = require('request');
+var processor = require('./taxisProcessor');
 
 app.get('/', function (req, res) {
-  res.send('API endpoints:\n- /1.0/locations\n- /1.0/stands\n\nMore info: https://github.com/uzyn/taxisg');
+  res.send('API endpoints:\n- /taxis\n- /stands\n\nMore info: https://github.com/uzyn/taxisg');
 });
 
-app.get('/1.0/locations', function (req, res) {
-  res.send('Taxi locations');
+app.get('/taxis', function (req, res) {
+  var randname = Math.floor(Math.random()*100000000000000);
+  var dir = 'tmp/' + randname + '/';
+  if(!fs.existsSync('tmp/')){
+    fs.mkdirSync('tmp/');
+  }
+  if(!fs.existsSync(dir)){
+    fs.mkdirSync(dir);
+  }
+
+  request.get(
+    'https://s3-ap-southeast-1.amazonaws.com/taxi-taxi/prod/share/taxi_location_service.sgc.zip'
+  ).on('end', function (response) {
+    exec('unzip -p -P sgctaxi2014 ' + dir + 'service.sgc.zip', function (err, stdout, stderr) {
+      var results = processor(stdout);
+/*
+      res.append('ETag', httpResponse.headers.etag);
+      res.append('Last-Modified', httpResponse.headers['last-modified']);
+*/
+      res.append('Access-Control-Allow-Origin', '*');
+      res.set('X-Powered-By', 'taxisg');
+      return res.json(results);
+    });
+  }).pipe(fs.createWriteStream(dir + 'service.sgc.zip'));
 });
 
-app.get('/1.0/stands', function (req, res) {
+app.get('/stands', function (req, res) {
   request.get({
     url: 'https://s3-ap-southeast-1.amazonaws.com/taxi-taxi/prod/share/taxi_stands.csv'
   }, function (err, httpResponse, body) {
@@ -30,7 +55,7 @@ app.get('/1.0/stands', function (req, res) {
       var results = [];
       data.forEach(function(datum) {
         results.push({
-          name: datum[0],
+          id: datum[0],
           lat: datum[2],
           lng: datum[1]
         });
@@ -38,6 +63,7 @@ app.get('/1.0/stands', function (req, res) {
 
       res.append('ETag', httpResponse.headers.etag);
       res.append('Last-Modified', httpResponse.headers['last-modified']);
+      res.append('Access-Control-Allow-Origin', '*');
       res.set('X-Powered-By', 'taxisg');
       return res.json(results);
     });
