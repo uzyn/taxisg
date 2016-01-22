@@ -22,13 +22,14 @@ app.get('/taxis', function (req, res) {
 
   request.get(
     'https://s3-ap-southeast-1.amazonaws.com/taxi-taxi/prod/share/taxi_location_service.sgc.zip'
-  ).on('end', function (response) {
+  )
+  .on('complete', function (response) {
     exec('unzip -p -P sgctaxi2014 ' + dir + 'service.sgc.zip', function (err, stdout, stderr) {
       var results = processor(stdout);
-/*
-      res.append('ETag', httpResponse.headers.etag);
-      res.append('Last-Modified', httpResponse.headers['last-modified']);
-*/
+
+      res.append('ETag', response.headers.etag);
+      res.append('Last-Modified', response.headers['last-modified']);
+
       res.append('Access-Control-Allow-Origin', '*');
       res.set('X-Powered-By', 'taxisg');
       return res.json(results);
