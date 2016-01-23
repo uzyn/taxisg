@@ -6,8 +6,8 @@ module.exports = {
         return context.fail(err);
       }
 
-      console.log(results);
-      return context.done(null, headers);
+      //console.log(results);
+      return context.done(null, results);
     });
   },
 
@@ -17,8 +17,8 @@ module.exports = {
         return context.fail(err);
       }
 
-      console.log(results);
-      return context.done(null, headers);
+      //console.log(results);
+      return context.done(null, results);
     });
   }
 };
