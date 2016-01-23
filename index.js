@@ -38,7 +38,7 @@ app.get('/taxis', function (req, res) {
 });
 
 app.get('/stands', function (req, res) {
-  stands.handler(function (err, results, headers) {
+  stands.fetch(function (err, results, headers) {
       res.append('ETag', headers.etag);
       res.append('Last-Modified', headers.lastmod);
       res.append('Access-Control-Allow-Origin', '*');

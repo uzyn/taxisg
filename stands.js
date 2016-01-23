@@ -3,7 +3,7 @@ var csvparse = require('csv-parse');
 
 module.exports = {
 
-  handler: function (callback) {
+  fetch: function (callback) {
     request.get({
       url: 'https://s3-ap-southeast-1.amazonaws.com/taxi-taxi/prod/share/taxi_stands.csv'
     }, function (err, httpResponse, body) {
