@@ -1,11 +1,12 @@
 var exec = require('child_process').exec;
 var fs = require('fs');
 var request = require('request');
+var tmpdir = require('os').tmpdir;
 
 module.exports = {
   fetch: function (callback) {
       var randname = Math.floor(Math.random()*100000000000000);
-      var tempzip = randname + 'taxi_location_service.sgc.zip';
+      var tempzip = tmpdir() + '/' + randname + 'taxi_location_service.sgc.zip';
 
       request.get(
         'https://s3-ap-southeast-1.amazonaws.com/taxi-taxi/prod/share/taxi_location_service.sgc.zip'
