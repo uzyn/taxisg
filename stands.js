@@ -8,15 +8,12 @@ module.exports = {
       url: 'https://s3-ap-southeast-1.amazonaws.com/taxi-taxi/prod/share/taxi_stands.csv'
     }, function (err, httpResponse, body) {
       if (err) {
-        console.log(httpResponse);
-        console.log(body);
-        return res.status(httpResponse.statusCode).send('Error');
+        return callback(err);
       }
 
       csvparse(body, function (err, data) {
         if (err) {
-          console.log(err);
-          return res.status(httpResponse.statusCode).send('Error');
+          return callback(err);
         }
 
         var results = [];
