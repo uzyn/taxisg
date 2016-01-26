@@ -9,44 +9,38 @@ AWS.config.update({
 var docClient = new AWS.DynamoDB.DocumentClient();
 
 module.exports = {
-  // Periodically recording of taxis locations
-  taxis: function (event, context) {
+  // Log of taxis locations
+  // Trigger this every 30 seconds
+  logTaxis: function (event, context) {
     require('./taxis').fetch(function (err, results, headers) {
       if (err) {
         return context.fail(err);
       }
 
       var params = {
-        TableName: process.env.AWS_DYNAMODB_TABLE
-      };
-      var timestamp = Math.floor(new Date(headers.lastmod).getTime() / 1000);
-
-      var q = async.queue(function (location, callback) {
-        params['Item'] = {
-          timestamp: timestamp,
-          coord: location.lat + ',' + location.lng
+        TableName: process.env.AWS_DYNAMODB_TABLE,
+        Item: {
+          timestamp: Math.floor(new Date(headers.lastmod).getTime() / 1000),
+          locations: results
         }
-        console.log(q.length() + ' left in queue');
-        docClient.put(params, function (err, data) {
-          if (err) {
-            console.log(err);
-
-            if (err.retryable === true) {
-              console.log('Added current one to retry');
-              q.push(location);
-            }
-          }
-          callback(err);
-        });
-      }, process.env.AWS_DYNAMODB_WRITE_CONCURRENCY);
-
-      q.drain = function() {
-        return context.done(null, '[DONE] ' + results.length + ' locations saved successfully. ' + headers.lastmod);
       };
 
-      console.log(results.length + ' locations obtained. Saving...');
-      results.forEach(function (location) {
-        q.push(location);
+      var saved = false;
+      async.whilst( function() {
+          return !saved;
+        }, function (callback) {
+        docClient.put(params, function (err, data) {
+          saved = true;
+          if (err && err.retryable === true) {
+            saved = false;
+          }
+          callback(err, data);
+        });
+      }, function (err, data) {
+        if (err) {
+          console.error(err);
+        }
+        return context.done(err, results.length + ' locations saved successfully with timestamp ' + headers.lastmod);
       });
     });
   }
