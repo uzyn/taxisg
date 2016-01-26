@@ -72,5 +72,3 @@ module.exports = {
     });
   }
 };
-
-module.exports.taxis();
