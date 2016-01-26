@@ -11,24 +11,6 @@ var docClient = new AWS.DynamoDB.DocumentClient();
 module.exports = {
   // Periodically recording of taxis locations
   taxis: function (event, context) {
-    /*
-    var params = {
-      TableName: process.env.AWS_DYNAMODB_TABLE,
-      Item: {
-        timestamp: Math.floor(Date.now() / 1000),
-        coord: '1,2',
-        lat: 1,
-        lng: 3
-      }
-    };
-    console.log(params);
-    docClient.put(params, function (err, data) {
-      console.log(err);
-      console.log(data);
-    //  process.exit();
-    });
-    */
-
     require('./taxis').fetch(function (err, results, headers) {
       if (err) {
         return context.fail(err);
@@ -59,16 +41,13 @@ module.exports = {
       }, process.env.AWS_DYNAMODB_WRITE_CONCURRENCY);
 
       q.drain = function() {
-        return console.log(results.length + ' locations saved');
+        return context.done(null, '[DONE] ' + results.length + ' locations saved successfully. ' + headers.lastmod);
       };
 
-      console.log('[DONE] ' + results.length + ' locations obtained. Saving...');
+      console.log(results.length + ' locations obtained. Saving...');
       results.forEach(function (location) {
         q.push(location);
       });
-
-      //console.log(results);
-      //return context.done(null, results);
     });
   }
 };
