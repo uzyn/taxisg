@@ -66,12 +66,11 @@ module.exports = {
               callback(err, data);
             });
           }, function (err, data) {
-            return callback(err, results, headers);
+            return callback(err);
           });
         }
-      }, function (err, results, headers) {
+      }, function (err) {
         if (err) {
-          console.log(err);
           return context.fail(err);
         } else {
           return context.done(err, results.length + ' locations saved successfully with timestamp ' + headers.lastmod);
