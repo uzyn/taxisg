@@ -50,7 +50,8 @@ module.exports = {
             TableName: process.env.AWS_DYNAMODB_TABLE,
             Item: {
               timestamp: timestamp,
-              locations: results
+              locations: results,
+              count: results.length
             }
           };
 
