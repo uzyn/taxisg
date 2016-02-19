@@ -20,8 +20,8 @@ module.exports = {
         data.forEach(function(datum) {
           results.push({
             id: datum[0],
-            lat: datum[2],
-            lng: datum[1]
+            lat: Number(datum[2]),
+            lng: Number(datum[1])
           });
         });
 
