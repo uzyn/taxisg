@@ -37,7 +37,6 @@ module.exports = {
             if (!err) {
               if (data.Count === 0) {
               } else {
-                return callback(null);
                 return callback('Data for timestamp ' + timestamp + ' is already logged.');
               }
             }
