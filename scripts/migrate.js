@@ -40,6 +40,7 @@ async.doWhilst(function (callback) {
   sourceClient.scan(scanParams, function (err, data) {
     if (err) {
       if (err.retryable === true) {
+        console.log(err);
         console.log('Retryable error');
         return callback(null); // to retry
       } else {
@@ -100,8 +101,8 @@ function migrate(row, next) {
   var docClient = new AWS.DynamoDB.DocumentClient({
     service: destDDB
   });
-  var grainsTable = 'testsg.grains';
-  var locationsTable = 'testsg.locations';
+  var grainsTable = 'taxisg.grains';
+  var locationsTable = 'taxisg.locations';
 
   async.series({
     validate: function (callback) {
