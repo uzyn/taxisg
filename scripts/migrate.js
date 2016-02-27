@@ -20,8 +20,12 @@ var destDDB = new AWS.DynamoDB({
 
 var lastEvaluatedKey = false;
 var count = 0;
-/*
+
 async.doWhilst(function (callback) {
+  var sourceClient = new AWS.DynamoDB.DocumentClient({
+    service: sourceDDB
+  });
+
   var scanParams = {
     TableName: 'taxisg.locations'
   };
@@ -30,7 +34,10 @@ async.doWhilst(function (callback) {
     scanParams.ExclusiveStartKey = lastEvaluatedKey;
   }
 
-  sourceDDB.scan(scanParams, function (err, data) {
+  console.log('');
+  console.log('[ Scanning next batch from ' + lastEvaluatedKey.timestamp + '... ]');
+
+  sourceClient.scan(scanParams, function (err, data) {
     if (err) {
       if (err.retryable === true) {
         console.log('Retryable error');
@@ -50,13 +57,22 @@ async.doWhilst(function (callback) {
     count = count + data.Count;
     console.log(count + ' rows migrated.');
 
-    if (lastEvaluatedKey) {
-      console.log('Last key: ' + lastEvaluatedKey.timestamp.N);
-    } else {
-      console.log('DONE');
-    }
+    async.each(data.Items, function (row, eachCb) {
+      migrate(row, eachCb);
+    }, function (err) {
+      if (err) {
+        console.log('Error at async.each encountered.');
+        return console.log(err);
+      }
 
-    return callback(null);
+      if (lastEvaluatedKey) {
+        console.log('Last key: ' + lastEvaluatedKey.timestamp);
+      } else {
+        console.log('DONE');
+      }
+
+      return callback(null);
+    });
   });
 }, function () {
   return lastEvaluatedKey;
@@ -68,8 +84,8 @@ async.doWhilst(function (callback) {
     return console.log('Completed successfully. Final count: ' + count);
   }
 });
-*/
 
+/*
 migrate({
   timestamp: 2325,
   locations: [
@@ -78,8 +94,9 @@ migrate({
   ],
   count: 5
 });
+*/
 
-function migrate(row) {
+function migrate(row, next) {
   var docClient = new AWS.DynamoDB.DocumentClient({
     service: destDDB
   });
@@ -104,7 +121,8 @@ function migrate(row) {
         if (!err) {
           if (data.Count === 0) {
           } else {
-            return callback('Data for timestamp ' + row.timestamp + ' is already logged.');
+            console.log('Data for timestamp ' + row.timestamp + ' is already logged.');
+            return callback(null); // Not an error.
           }
         }
         return callback(err);
@@ -112,7 +130,7 @@ function migrate(row) {
 
     },
 
-    put: function (callback) {
+    put: function (putCallback) {
       var params = {
         TableName: locationsTable,
         Item: {
@@ -124,23 +142,24 @@ function migrate(row) {
       var saved = false;
       async.whilst( function() {
           return !saved;
-        }, function (callback) {
+        }, function (whilstCb) {
         docClient.put(params, function (err, data) {
           saved = true;
           if (err && err.retryable === true) {
             saved = false;
+            return whilstCb(null);
           }
-          callback(err);
+          return whilstCb(err);
         });
       }, function (err, data) {
-        return callback(err);
+        return putCallback(err);
       });
     },
 
     /**
      * Write to another table for sortability
      */
-    grains: function (callback) {
+    grains: function (grainsCallback) {
       var params = {
         TableName: grainsTable,
         Item: {
@@ -153,24 +172,25 @@ function migrate(row) {
       var saved = false;
       async.whilst( function() {
           return !saved;
-        }, function (callback) {
+        }, function (whilstCb) {
         docClient.put(params, function (err, data) {
           saved = true;
           if (err && err.retryable === true) {
             saved = false;
+            whilstCb(null);
           }
-          callback(err);
+          whilstCb(err);
         });
       }, function (err, data) {
-        return callback(err);
+        return grainsCallback(err);
       });
     },
   }, function (err) {
     if (err) {
-      return console.log(err);
+      return next(err);
     } else {
-      console.log(row.locations);
-      return console.log(row.count + ' (' + row.locations.length + ') locations saved successfully with timestamp ' + row.timestamp);
+      console.log(row.count + ' (' + row.locations.length + ') locations saved successfully with timestamp ' + row.timestamp);
+      return next(null);
     }
   });
 }
