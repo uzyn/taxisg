@@ -1,0 +1,15 @@
+{
+  "name": "taxisg-viewer",
+  "version": "1.0.0",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uzyn/taxisg.git"
+  },
+  "author": "U-Zyn Chua <uzyn@zynesis.com>",
+  "private": true,
+  "bugs": {
+    "url": "https://github.com/uzyn/taxisg/issues"
+  },
+  "homepage": "https://github.com/uzyn/taxisg#readme"
+}
