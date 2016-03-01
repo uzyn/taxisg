@@ -29,13 +29,13 @@ const db = {
       ReturnConsumedCapacity: 'TOTAL'
     };
 
-    docClient.query(params, (err, data) => {
-      if (err) {
-        return console.log(err);
-      }
-      console.log(data);
-      console.log(data.Items[0].timestamp);
-      return data;
+    return new Promise((resolve, reject) => {
+      docClient.query(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(data);
+      });
     });
   }
 }
@@ -53,15 +53,21 @@ const Latest = React.createClass({
   },
 
   componentDidMount() {
-    db.latest();
+    db.latest().then(data => {
+      this.setState({
+        timestamp: data.Items[0].timestamp,
+        count: data.Items[0].count
+      });
+    }, err => {
+      console.log(err);
+    });
   },
 
   render() {
-    console.log(this.state);
     return (
       <div id="latest">
         <h3>Currently {this.state.count} taxis on the road</h3>
-        <p>as at {this.state.timestamp} 30 seconds ago.</p>
+        <p>as at {this.state.timestamp}.</p>
       </div>
     );
   }
