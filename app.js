@@ -45,36 +45,36 @@ const db = {
  * React
  */
 const Latest = React.createClass({
-  getInitialState() {
-    return {
-      timestamp: null,
-      count: 'loading...'
-    };
-  },
 
-  componentDidMount() {
+  loadFromDb() {
     db.latest().then(data => {
       this.setState({
-        timestamp: data.Items[0].timestamp,
-        count: data.Items[0].count
+        timestamp: moment(data.Items[0].timestamp * 1000).format('dddd, MMMM Do YYYY, h:mm:ss a'),
+        count: data.Items[0].count.toLocaleString()
       });
     }, err => {
       console.log(err);
     });
   },
 
+  getInitialState() {
+    return {
+      timestampNumber: null,
+      timestamp: 'loading...',
+      count: 'loading...'
+    };
+  },
+
+  componentDidMount() {
+    this.loadFromDb();
+    setInterval(this.loadFromDb, 30000);
+  },
+
   render() {
-    let formatted = {
-      count: (Number.isInteger(this.state.count)) ? this.state.count.toLocaleString() : this.state.count
-    }
-    /*
-    if (this.state.count) {
-      formatted.count =
-    }
-*/
     return (
       <div id="latest">
-        <h3>Currently {formatted.count} taxis on the road</h3>
+        <h2>Latest</h2>
+        <h3>{this.state.count} taxis on the road</h3>
         <p>as at {this.state.timestamp}.</p>
       </div>
     );
