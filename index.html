@@ -1,22 +1,28 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Singapore Taxi Data Visualization</title>
   <meta name="author" content="U-Zyn Chua">
+  <style>
+  #map { height: 500px; }
+  </style>
 </head>
 <body>
 
   <h1>Singapore taxis</h1>
 
   <div id="container"></div>
+  <div id="map"></div>
 
   <script src="https://sdk.amazonaws.com/js/aws-sdk-2.2.39.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.2/moment.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react-dom.js"></script>
-  <script src="app.js" type="text/babel"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDa9bguArDvjYH_MwNFSESJVQ_a39cYP-4&callback=initMap"></script>
+
+  <script src="js/app.js" type="text/babel"></script>
+  <script src="js/map.js"></script>
 </body>
 </html>
