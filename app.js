@@ -48,7 +48,7 @@ const Latest = React.createClass({
   getInitialState() {
     return {
       timestamp: null,
-      count: null
+      count: 'loading...'
     };
   },
 
@@ -64,9 +64,17 @@ const Latest = React.createClass({
   },
 
   render() {
+    let formatted = {
+      count: (Number.isInteger(this.state.count)) ? this.state.count.toLocaleString() : this.state.count
+    }
+    /*
+    if (this.state.count) {
+      formatted.count =
+    }
+*/
     return (
       <div id="latest">
-        <h3>Currently {this.state.count} taxis on the road</h3>
+        <h3>Currently {formatted.count} taxis on the road</h3>
         <p>as at {this.state.timestamp}.</p>
       </div>
     );
