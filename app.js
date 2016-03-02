@@ -6,7 +6,9 @@ AWS.config.update({
   accessKeyId: 'AKIAJEZJR6ZGINIW5YYQ',
   secretAccessKey: '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',
 });
+
 const docClient = new AWS.DynamoDB.DocumentClient();
+
 
 const db = {
   tables: {
@@ -37,6 +39,25 @@ const db = {
         return resolve(data);
       });
     });
+  },
+
+  locations(timestamp) {
+    const params = {
+      TableName: this.tables.locations,
+      Key: {
+        timestamp
+      },
+      ReturnConsumedCapacity: 'TOTAL'
+    };
+
+    return new Promise((resolve, reject) => {
+      docClient.get(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(data);
+      });
+    });
   }
 }
 
@@ -50,16 +71,13 @@ const Latest = React.createClass({
         timestamp: moment(data.Items[0].timestamp * 1000).format('dddd, MMMM Do YYYY, h:mm:ss a'),
         count: data.Items[0].count.toLocaleString()
       });
+      return db.locations(data.Items[0].timestamp);
+    }).then(data => {
+      this.setState({
+        locations: data.Item.locations
+      });
     }, err => {
       console.log(err);
-    });
-
-    let locations = [
-      { lat: Math.random() * (1.4 - 1.3) + 1.3, lng: 103.7 },
-      { lat: 1.3576, lng: 103.75 }
-    ];
-    this.setState({
-      locations
     });
   },
 
@@ -91,9 +109,6 @@ const Latest = React.createClass({
 const MapArea = React.createClass({
   map: null,
 
-  clearMarkers() {
-  },
-
   getInitialState() {
     return {
       markers: []
@@ -117,8 +132,8 @@ const MapArea = React.createClass({
   render() {
     for (let location of this.props.locations) {
       let marker = new google.maps.Marker({
-        position: location,
-        map: this.map
+        map: this.map,
+        position: location
       });
       this.state.markers.push(marker);
     }
