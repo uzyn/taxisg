@@ -53,13 +53,21 @@ const Latest = React.createClass({
     }, err => {
       console.log(err);
     });
+
+    let locations = [
+      { lat: 1.3575, lng: 103.7 },
+      { lat: 1.3576, lng: 103.75 }
+    ];
+    this.setState({
+      locations
+    });
   },
 
   getInitialState() {
     return {
-      timestampNumber: null,
       timestamp: 'loading...',
-      count: 'loading...'
+      count: 'loading...',
+      locations: []
     };
   },
 
@@ -69,11 +77,13 @@ const Latest = React.createClass({
   },
 
   render() {
+    console.log(this.state);
     return (
       <div id="latest">
         <h2>Latest</h2>
         <h3>{this.state.count} taxis on the road</h3>
         <p>as at {this.state.timestamp}.</p>
+        <MapArea markers={this.state.locations} />
       </div>
     );
   }
@@ -82,29 +92,15 @@ const Latest = React.createClass({
 const MapArea = React.createClass({
   map: null,
 
-  getInitialState() {
-    return {
-      markers: []
-    };
-  },
-
   componentDidMount() {
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 1.35763, lng: 103.816797 },
       zoom: 12
     });
-
-    let markers = [
-      { lat: 1.3575, lng: 103.7 },
-      { lat: 1.3576, lng: 103.75 }
-    ];
-    this.setState({
-      markers
-    });
   },
 
   render() {
-    for (let marker of this.state.markers) {
+    for (let marker of this.props.markers) {
       new google.maps.Marker({
         position: marker,
         map: this.map
@@ -123,7 +119,6 @@ ReactDOM.render(
   (
     <div>
       <Latest />
-      <MapArea />
     </div>
   ),
   document.getElementById('react')
