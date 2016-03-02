@@ -55,7 +55,7 @@ const Latest = React.createClass({
     });
 
     let locations = [
-      { lat: 1.3575, lng: 103.7 },
+      { lat: Math.random() * (1.4 - 1.3) + 1.3, lng: 103.7 },
       { lat: 1.3576, lng: 103.75 }
     ];
     this.setState({
@@ -77,13 +77,12 @@ const Latest = React.createClass({
   },
 
   render() {
-    console.log(this.state);
     return (
       <div id="latest">
         <h2>Latest</h2>
         <h3>{this.state.count} taxis on the road</h3>
         <p>as at {this.state.timestamp}.</p>
-        <MapArea markers={this.state.locations} />
+        <MapArea locations={this.state.locations} />
       </div>
     );
   }
@@ -92,6 +91,15 @@ const Latest = React.createClass({
 const MapArea = React.createClass({
   map: null,
 
+  clearMarkers() {
+  },
+
+  getInitialState() {
+    return {
+      markers: []
+    }
+  },
+
   componentDidMount() {
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 1.35763, lng: 103.816797 },
@@ -99,12 +107,20 @@ const MapArea = React.createClass({
     });
   },
 
+  componentWillUpdate() {
+    for (let marker of this.state.markers) {
+      marker.setMap(null);
+    }
+    this.state.markers = [];
+  },
+
   render() {
-    for (let marker of this.props.markers) {
-      new google.maps.Marker({
-        position: marker,
+    for (let location of this.props.locations) {
+      let marker = new google.maps.Marker({
+        position: location,
         map: this.map
-      })
+      });
+      this.state.markers.push(marker);
     }
 
     return (
