@@ -39,7 +39,6 @@ const db = {
     });
   }
 }
-//db.latest();
 
 /**
  * React
@@ -85,3 +84,14 @@ ReactDOM.render(
   <Latest />,
   document.getElementById('container')
 );
+
+/**
+ * Google Maps
+ */
+const map = new google.maps.Map(document.getElementById('map'), {
+  center: {lat: 1.35763, lng: 103.816797},
+  disableDefaultUI: true,
+  zoom: 11
+});
+
+
