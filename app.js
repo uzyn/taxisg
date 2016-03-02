@@ -82,17 +82,38 @@ const Latest = React.createClass({
 const MapArea = React.createClass({
   map: null,
 
+  getInitialState() {
+    return {
+      markers: []
+    };
+  },
+
   componentDidMount() {
     this.map = new google.maps.Map(document.getElementById('map'), {
-      center: {lat: 1.35763, lng: 103.816797},
+      center: { lat: 1.35763, lng: 103.816797 },
       zoom: 12
+    });
+
+    let markers = [
+      { lat: 1.3575, lng: 103.7 },
+      { lat: 1.3576, lng: 103.75 }
+    ];
+    this.setState({
+      markers
     });
   },
 
   render() {
+    for (let marker of this.state.markers) {
+      new google.maps.Marker({
+        position: marker,
+        map: this.map
+      })
+    }
+
     return (
       <div id="map">
-        Map here
+        Loading map...
       </div>
     );
   }
