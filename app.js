@@ -44,7 +44,6 @@ const db = {
  * React
  */
 const Latest = React.createClass({
-
   loadFromDb() {
     db.latest().then(data => {
       this.setState({
@@ -80,18 +79,31 @@ const Latest = React.createClass({
   }
 });
 
-ReactDOM.render(
-  <Latest />,
-  document.getElementById('container')
-);
+const MapArea = React.createClass({
+  map: null,
 
-/**
- * Google Maps
- */
-const map = new google.maps.Map(document.getElementById('map'), {
-  center: {lat: 1.35763, lng: 103.816797},
-  disableDefaultUI: true,
-  zoom: 11
+  componentDidMount() {
+    this.map = new google.maps.Map(document.getElementById('map'), {
+      center: {lat: 1.35763, lng: 103.816797},
+      zoom: 12
+    });
+  },
+
+  render() {
+    return (
+      <div id="map">
+        Map here
+      </div>
+    );
+  }
 });
 
-
+ReactDOM.render(
+  (
+    <div>
+      <Latest />
+      <MapArea />
+    </div>
+  ),
+  document.getElementById('react')
+);
