@@ -108,34 +108,54 @@ const Latest = React.createClass({
 
 const MapArea = React.createClass({
   map: null,
+  heatmap: null,
+
+  gradient: [
+    'rgba(0, 255, 255, 0)',
+    'rgba(0, 255, 255, 1)',
+    'rgba(0, 191, 255, 1)',
+    'rgba(0, 127, 255, 1)',
+    'rgba(0, 63, 255, 1)',
+    'rgba(0, 0, 255, 1)',
+    'rgba(0, 0, 223, 1)',
+    'rgba(0, 0, 191, 1)',
+    'rgba(0, 0, 159, 1)',
+    'rgba(0, 0, 127, 1)',
+    'rgba(63, 0, 91, 1)',
+    'rgba(127, 0, 63, 1)',
+    'rgba(191, 0, 31, 1)',
+    'rgba(255, 0, 0, 1)'
+  ],
 
   getInitialState() {
     return {
-      markers: []
+      markers: [],
+      heatmapData: new google.maps.MVCArray()
     }
   },
 
   componentDidMount() {
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 1.35763, lng: 103.816797 },
-      zoom: 12
+      zoom: 12,
+      mapTypeId: google.maps.MapTypeId.SATELLITE
+    });
+
+    this.heatmap = new google.maps.visualization.HeatmapLayer({
+      data: this.state.heatmapData,
+      radius: 10,
+      maxIntensity: 5,
+      map: this.map
     });
   },
 
   componentWillUpdate() {
-    for (let marker of this.state.markers) {
-      marker.setMap(null);
-    }
-    this.state.markers = [];
+    this.state.heatmapData.clear();
   },
 
   render() {
     for (let location of this.props.locations) {
-      let marker = new google.maps.Marker({
-        map: this.map,
-        position: location
-      });
-      this.state.markers.push(marker);
+      this.state.heatmapData.push(new google.maps.LatLng(location));
     }
 
     return (
