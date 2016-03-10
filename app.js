@@ -110,23 +110,6 @@ const MapArea = React.createClass({
   map: null,
   heatmap: null,
 
-  gradient: [
-    'rgba(0, 255, 255, 0)',
-    'rgba(0, 255, 255, 1)',
-    'rgba(0, 191, 255, 1)',
-    'rgba(0, 127, 255, 1)',
-    'rgba(0, 63, 255, 1)',
-    'rgba(0, 0, 255, 1)',
-    'rgba(0, 0, 223, 1)',
-    'rgba(0, 0, 191, 1)',
-    'rgba(0, 0, 159, 1)',
-    'rgba(0, 0, 127, 1)',
-    'rgba(63, 0, 91, 1)',
-    'rgba(127, 0, 63, 1)',
-    'rgba(191, 0, 31, 1)',
-    'rgba(255, 0, 0, 1)'
-  ],
-
   getInitialState() {
     return {
       markers: [],
@@ -135,16 +118,29 @@ const MapArea = React.createClass({
   },
 
   componentDidMount() {
+    let styles = [
+      {
+        "stylers": [
+          { "hue": "#e500ff" },
+          { "invert_lightness": true },
+          { "saturation": -20 },
+          { lightness: -20 }
+        ]
+      }
+    ];
+
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 1.35763, lng: 103.816797 },
       zoom: 12,
-      mapTypeId: google.maps.MapTypeId.SATELLITE
+      minZoom: 11,
+      maxZoom: 16,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      styles: styles
     });
 
     this.heatmap = new google.maps.visualization.HeatmapLayer({
       data: this.state.heatmapData,
-      radius: 10,
-      maxIntensity: 5,
+      radius: 20,
       map: this.map
     });
   },
