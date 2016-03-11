@@ -9,7 +9,6 @@ AWS.config.update({
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
-
 const db = {
   tables: {
     grains: 'taxisg.grains',
@@ -21,11 +20,14 @@ const db = {
       TableName: this.tables.grains,
       KeyConditionExpression: '#d = :d',
       ExpressionAttributeNames: {
-        '#d': 'domain'
+        '#d': 'domain',
+        '#t': 'timestamp',
+        '#c': 'count'
       },
       ExpressionAttributeValues: {
         ':d': 1
       },
+      ProjectionExpression: '#t, #c',
       Limit: 1,
       ScanIndexForward: false,
       ReturnConsumedCapacity: 'TOTAL'
@@ -36,6 +38,43 @@ const db = {
         if (err) {
           return reject(err);
         }
+        return resolve(data);
+      });
+    });
+  },
+
+  countRange(since = null, to = null) {
+    const oldestDays = 60;
+    const sinceOldest = Math.floor(new Date().getTime()/1000) - oldestDays * 86400;
+
+    if (!Number.isInteger(since) || since < sinceOldest) {
+      since = Math.floor(new Date().getTime()/1000) - 30 * 86400; // 30 days default
+    }
+
+    const params = {
+      TableName: this.tables.grains,
+      KeyConditionExpression: '#d = :d AND #t >= :t',
+      ExpressionAttributeNames: {
+        '#d': 'domain',
+        '#t': 'timestamp',
+        '#c': 'count',
+      },
+      ExpressionAttributeValues: {
+        ':d': 1,
+        ':t': since
+      },
+      ProjectionExpression: '#t, #c',
+      Limit: oldestDays * 86400 * 2,
+      ScanIndexForward: true,
+      ReturnConsumedCapacity: 'TOTAL'
+    };
+
+    return new Promise((resolve, reject) => {
+      docClient.query(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        // TODO: handle pagination
         return resolve(data);
       });
     });
@@ -106,6 +145,63 @@ const Latest = React.createClass({
   }
 });
 
+const Range = React.createClass({
+  dygraph: null,
+
+  loadFromDb() {
+    let since = Math.floor(new Date().getTime()/1000) - this.props.daysSince * 86400;
+    db.countRange(since).then(data => {
+      let graphData = [];
+      for (let item of data.Items) {
+        if (Number.isInteger(item.count) && item.count > 0) {
+          graphData.push([ new Date(item.timestamp * 1000), item.count ]);
+        }
+      }
+      this.setState({ data: graphData });
+    });
+  },
+
+  getInitialState() {
+    return {
+      data: []
+    };
+  },
+
+  componentDidMount() {
+    this.loadFromDb();
+  },
+
+  componentDidUpdate() {
+    this.dygraph = new Dygraph(
+      document.getElementById('graph'),
+      this.state.data,
+      {
+        labels: [ 'time', 'Total taxis' ],
+        showRangeSelector: true,
+        rollPeriod: 5 * 2, // 5 minutes
+        //rangeSelectorHeight: 30,
+        ylabel: 'Total taxis',
+        width: 1000,
+        height: 400,
+        legend: 'always',
+        showRoller: true,
+        fillGraph: true
+      }
+    );
+  },
+
+  render() {
+    return (
+      <div id="range">
+        <h2>Total number of taxis for the last {this.props.daysSince} days.</h2>
+        <div id="graph">
+          Loading graph...
+        </div>
+      </div>
+    );
+  }
+});
+
 const MapArea = React.createClass({
   map: null,
   heatmap: null,
@@ -132,8 +228,8 @@ const MapArea = React.createClass({
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 1.35763, lng: 103.816797 },
       zoom: 12,
-      minZoom: 11,
-      maxZoom: 16,
+      minZoom: 12,
+      //maxZoom: 16,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
       styles: styles
     });
@@ -165,8 +261,10 @@ const MapArea = React.createClass({
 ReactDOM.render(
   (
     <div>
+      <Range daysSince="7" />
       <Latest />
     </div>
   ),
-  document.getElementById('react')
+  document.getElementById('app')
 );
+
