@@ -123,7 +123,7 @@ const TabGroup = React.createClass({
   render() {
     return (
       <div className="btn-group btn-group-lg" role="group">
-        <Tab name="live" label="Name" active={this.isActive('live')}
+        <Tab name="live" label="Live" active={this.isActive('live')}
           handleClick={this.handleClick}
         />
         <Tab name="range" label="Range" active={this.isActive('range')}
@@ -231,9 +231,8 @@ const Range = React.createClass({
         labels: [ 'time', 'Total taxis' ],
         showRangeSelector: true,
         rollPeriod: 5 * 2, // 5 minutes
-        //rangeSelectorHeight: 30,
-        ylabel: 'Total taxis',
-        width: 1000,
+        rangeSelectorHeight: 50,
+        width: 1200,
         height: 400,
         legend: 'always',
         showRoller: true,
@@ -244,7 +243,7 @@ const Range = React.createClass({
 
   render() {
     return (
-      <div id="range">
+      <div>
         <h2>Total number of taxis for the last {this.props.daysSince} days.</h2>
         <div id="graph">
           Loading graph...

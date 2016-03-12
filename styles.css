@@ -1,5 +1,9 @@
+#app {
+  width: 1200px;
+  background-color: #fff;
+}
+
 #map {
    height: 800px;
    width: 1200px;
 }
-
