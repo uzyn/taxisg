@@ -103,12 +103,15 @@ const db = {
 /**
  * React
  */
-const Tabs = React.createClass({
-  classesIfActive(option, classes = 'btn btn-default') {
-    if (this.state.option === option) {
-      classes = classes + ' active';
-    }
-    return classes;
+const TabGroup = React.createClass({
+  isActive(name) {
+    return this.state.option === name;
+  },
+
+  handleClick(name) {
+    this.setState({
+      option: name
+    });
   },
 
   getInitialState() {
@@ -120,11 +123,35 @@ const Tabs = React.createClass({
   render() {
     return (
       <div className="btn-group btn-group-lg" role="group">
-        <button type="button" className={this.classesIfActive('live')}>LIVE</button>
-        <button type="button" className={this.classesIfActive('range')}>Range</button>
-        <button type="button" className={this.classesIfActive('play')}>Play</button>
+        <Tab name="live" label="Name" active={this.isActive('live')}
+          handleClick={this.handleClick}
+        />
+        <Tab name="range" label="Range" active={this.isActive('range')}
+          handleClick={this.handleClick}
+        />
+        <Tab name="play" label="Play" active={this.isActive('play')}
+          handleClick={this.handleClick}
+        />
       </div>
     );
+  }
+});
+
+const Tab = React.createClass({
+  getClasses() {
+    let classes = 'btn btn-default';
+    if (this.props.active) {
+      classes = classes + ' active';
+    }
+    return classes;
+  },
+
+  handleClick(event) {
+    this.props.handleClick(this.props.name);
+  },
+
+  render() {
+    return <button type="button" className={this.getClasses()} onClick={this.handleClick}>{this.props.label}</button>
   }
 });
 
@@ -288,14 +315,12 @@ ReactDOM.render(
     <div id="app-proper">
       <div className="text-center">
         <h1>Singapore taxis</h1>
-        <Tabs />
+        <TabGroup />
       </div>
-      { /*
       <div>
         <Range daysSince="7" />
         <Latest />
       </div>
-    */ }
     </div>
   ),
   document.getElementById('app')
