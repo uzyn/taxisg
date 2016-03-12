@@ -104,12 +104,25 @@ const db = {
  * React
  */
 const Tabs = React.createClass({
+  classesIfActive(option, classes = 'btn btn-default') {
+    if (this.state.option === option) {
+      classes = classes + ' active';
+    }
+    return classes;
+  },
+
+  getInitialState() {
+    return {
+      option: 'live'
+    }
+  },
+
   render() {
     return (
       <div className="btn-group btn-group-lg" role="group">
-        <button type="button" className="btn btn-default">LIVE</button>
-        <button type="button" className="btn btn-default">Range</button>
-        <button type="button" className="btn btn-default">Play</button>
+        <button type="button" className={this.classesIfActive('live')}>LIVE</button>
+        <button type="button" className={this.classesIfActive('range')}>Range</button>
+        <button type="button" className={this.classesIfActive('play')}>Play</button>
       </div>
     );
   }
@@ -277,10 +290,12 @@ ReactDOM.render(
         <h1>Singapore taxis</h1>
         <Tabs />
       </div>
+      { /*
       <div>
         <Range daysSince="7" />
         <Latest />
       </div>
+    */ }
     </div>
   ),
   document.getElementById('app')
