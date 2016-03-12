@@ -103,6 +103,18 @@ const db = {
 /**
  * React
  */
+const Tabs = React.createClass({
+  render() {
+    return (
+      <div className="btn-group btn-group-lg" role="group">
+        <button type="button" className="btn btn-default">LIVE</button>
+        <button type="button" className="btn btn-default">Range</button>
+        <button type="button" className="btn btn-default">Play</button>
+      </div>
+    );
+  }
+});
+
 const Latest = React.createClass({
   loadFromDb() {
     db.latest().then(data => {
@@ -236,7 +248,7 @@ const MapArea = React.createClass({
 
     this.heatmap = new google.maps.visualization.HeatmapLayer({
       data: this.state.heatmapData,
-      radius: 20,
+      radius: 15,
       map: this.map
     });
   },
@@ -260,9 +272,15 @@ const MapArea = React.createClass({
 
 ReactDOM.render(
   (
-    <div>
-      <Range daysSince="7" />
-      <Latest />
+    <div id="app-proper">
+      <div className="text-center">
+        <h1>Singapore taxis</h1>
+        <Tabs />
+      </div>
+      <div>
+        <Range daysSince="7" />
+        <Latest />
+      </div>
     </div>
   ),
   document.getElementById('app')
