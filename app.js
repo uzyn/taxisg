@@ -267,7 +267,8 @@ const Range = React.createClass({
         height: 400,
         legend: 'always',
         showRoller: true,
-        fillGraph: true
+        fillGraph: true,
+        dateWindow: [ moment().subtract(5, 'days'), moment() ]
       }
     );
   },
