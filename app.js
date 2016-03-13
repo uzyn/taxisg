@@ -132,7 +132,7 @@ const db = {
 /**
  * React
  */
-const TabGroup = React.createClass({
+const App = React.createClass({
   isActive(name) {
     return this.state.option === name;
   },
@@ -145,22 +145,25 @@ const TabGroup = React.createClass({
 
   getInitialState() {
     return {
-      option: 'live'
+      option: 'snapshots'
     }
   },
 
   render() {
     return (
-      <div className="btn-group btn-group-lg" role="group">
-        <Tab name="live" label="Live" active={this.isActive('live')}
-          handleClick={this.handleClick}
-        />
-        <Tab name="range" label="Range" active={this.isActive('range')}
-          handleClick={this.handleClick}
-        />
-        <Tab name="play" label="Play" active={this.isActive('play')}
-          handleClick={this.handleClick}
-        />
+      <div id="app-proper">
+        <div className="text-center">
+          <h1>Singapore taxis</h1>
+          <div className="btn-group btn-group-lg" role="group">
+            <Tab name="snapshots" label="Snapshots" active={this.isActive('snapshots')}
+              handleClick={this.handleClick}
+            />
+            <Tab name="animation" label="Animation" active={this.isActive('animation')}
+              handleClick={this.handleClick}
+            />
+          </div>
+        </div>
+        <TabContent active={this.state.option} />
       </div>
     );
   }
@@ -184,7 +187,38 @@ const Tab = React.createClass({
   }
 });
 
+const TabContent = React.createClass({
+  render() {
+    if (this.props.active === 'animation') {
+      return <Animation />;
+    } else {
+      return <Snapshots />;
+    }
+  }
+});
+
+const Snapshots = React.createClass({
+  render() {
+    return (
+      <div>
+        <Range daysSince="14" />
+        <Latest />
+      </div>
+    );
+  }
+});
+
+const Animation = React.createClass({
+  render() {
+    return (
+      <h2>Animation</h2>
+    );
+  }
+});
+
 const Latest = React.createClass({
+  refreshTimer: null,
+
   loadFromDb() {
     db.latest().then(data => {
       this.setState({
@@ -211,7 +245,11 @@ const Latest = React.createClass({
 
   componentDidMount() {
     this.loadFromDb();
-    setInterval(this.loadFromDb, 30000);
+    this.refreshTimer = setInterval(this.loadFromDb, 30000);
+  },
+
+  componentWillUnmount() {
+    clearInterval(this.refreshTimer);
   },
 
   render() {
@@ -342,18 +380,7 @@ const MapArea = React.createClass({
 });
 
 ReactDOM.render(
-  (
-    <div id="app-proper">
-      <div className="text-center">
-        <h1>Singapore taxis</h1>
-        <TabGroup />
-      </div>
-      <div>
-        <Range daysSince="14" />
-        <Latest />
-      </div>
-    </div>
-  ),
+  <App />,
   document.getElementById('app')
 );
 
