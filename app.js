@@ -50,10 +50,10 @@ const db = {
 
   countRange(since = null, to = null) {
     const oldestDays = 60;
-    const sinceOldest = Math.floor(new Date().getTime()/1000) - oldestDays * 86400;
+    const sinceOldest = moment().subtract(oldestDays, 'days').unix();
 
     if (!Number.isInteger(since) || since < sinceOldest) {
-      since = Math.floor(new Date().getTime()/1000) - 30 * 86400; // 30 days default
+      since = moment().subtract(30, 'days').unix();
     }
 
     const params = {
@@ -230,7 +230,7 @@ const Range = React.createClass({
   dygraph: null,
 
   loadFromDb() {
-    let since = Math.floor(new Date().getTime()/1000) - this.props.daysSince * 86400;
+    let since = moment().subtract(this.props.daysSince, 'days').unix();
     db.countRange(since).then(data => {
       let graphData = [];
       for (let item of data.Items) {
@@ -239,6 +239,8 @@ const Range = React.createClass({
         }
       }
       this.setState({ data: graphData });
+    }, err => {
+      console.log(err);
     });
   },
 
