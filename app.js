@@ -15,6 +15,11 @@ const db = {
     locations: 'taxisg.locations'
   },
 
+  state: {
+    grains: null,
+    latestTimestamp: null
+  },
+
   latest() {
     const params = {
       TableName: this.tables.grains,
@@ -69,15 +74,7 @@ const db = {
       ReturnConsumedCapacity: 'TOTAL'
     };
 
-    return new Promise((resolve, reject) => {
-      docClient.query(params, (err, data) => {
-        if (err) {
-          return reject(err);
-        }
-        // TODO: handle pagination
-        return resolve(data);
-      });
-    });
+    return this.query(params);
   },
 
   locations(timestamp) {
@@ -95,6 +92,38 @@ const db = {
           return reject(err);
         }
         return resolve(data);
+      });
+    });
+  },
+
+  // Query DynamoDB with pagination support
+  // NOTE: Only data.Items are handled, the other fields are not handled (summed/concatenated, etc)
+  query(params, lastEvaluatedKey = null) {
+    if (lastEvaluatedKey) {
+      params.ExclusiveStartKey = lastEvaluatedKey;
+    }
+
+    return new Promise((resolve, reject) => {
+      docClient.query(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+
+        if (data.LastEvaluatedKey) {
+          this.query(params, data.LastEvaluatedKey).then(nextData => {
+            data.Items = data.Items.concat(nextData.Items);
+            data.Count += nextData.Count;
+            data.scannedCount += nextData.scannedCount;
+            if (nextData.ConsumedCapacity) {
+              data.ConsumedCapacity.CapacityUnits += nextData.ConsumedCapacity.CapacityUnits;
+            }
+            return resolve(data);
+          }, err => {
+            return reject(err);
+          });
+        } else {
+          return resolve(data);
+        }
       });
     });
   }
@@ -317,7 +346,7 @@ ReactDOM.render(
         <TabGroup />
       </div>
       <div>
-        <Range daysSince="7" />
+        <Range daysSince="14" />
         <Latest />
       </div>
     </div>
