@@ -9,6 +9,10 @@ AWS.config.update({
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
+const cache = {
+  snapshotsRange: null
+};
+
 const db = {
   tables: {
     grains: 'taxisg.grains',
@@ -267,19 +271,24 @@ const Latest = React.createClass({
 const Range = React.createClass({
   dygraph: null,
 
-  loadFromDb() {
-    let since = moment().subtract(this.props.daysSince, 'days').unix();
-    db.countRange(since).then(data => {
-      let graphData = [];
-      for (let item of data.Items) {
-        if (Number.isInteger(item.count) && item.count > 0) {
-          graphData.push([ new Date(item.timestamp * 1000), item.count ]);
+  loadData() {
+    if (!cache.snapshotsRange) {
+      let since = moment().subtract(this.props.daysSince, 'days').unix();
+      db.countRange(since).then(data => {
+        let graphData = [];
+        for (let item of data.Items) {
+          if (Number.isInteger(item.count) && item.count > 0) {
+            graphData.push([ new Date(item.timestamp * 1000), item.count ]);
+          }
         }
-      }
-      this.setState({ data: graphData });
-    }, err => {
-      console.log(err);
-    });
+        cache.snapshotsRange = graphData;
+        this.setState({ data: graphData });
+      }, err => {
+        console.log(err);
+      });
+    } else {
+      this.setState({ data: cache.snapshotsRange });
+    }
   },
 
   getInitialState() {
@@ -289,7 +298,7 @@ const Range = React.createClass({
   },
 
   componentDidMount() {
-    this.loadFromDb();
+    this.loadData();
   },
 
   componentDidUpdate() {
