@@ -184,8 +184,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      //option: 'snapshots'
-      option: 'animation'
+      option: 'snapshots'
+      //option: 'animation'
     }
   },
 
@@ -318,20 +318,6 @@ const Animation = React.createClass({
 });
 
 const AnimationLineChart = React.createClass({
-  convertData(data) {
-    if (!data) {
-      return null;
-    }
-
-    let graphData = [];
-    for (let item of data) {;
-      if (Number.isInteger(item.count) && item.count > 0) {
-        graphData.push([ new Date(item.timestamp * 1000), item.count ]);
-      }
-    }
-    return graphData;
-  },
-
   render() {
     let graph = null;
     if (this.props.data) {
@@ -344,7 +330,7 @@ const AnimationLineChart = React.createClass({
       graph = (
         <div>
           <h2>{ moment(this.props.date, 'YYYY-MM-DD').format('dddd, MMMM Do, YYYY') }</h2>
-          <Graph data={this.convertData(this.props.data)} options={options} />
+          <Graph grains={this.props.data} options={options} />
         </div>
       );
     }
@@ -406,20 +392,12 @@ const Latest = React.createClass({
 });
 
 const Range = React.createClass({
-  dygraph: null,
-
   loadData() {
     if (!cache.snapshotsRange) {
       let since = moment().subtract(this.props.daysSince, 'days').unix();
       db.countRange(since).then(data => {
-        let graphData = [];
-        for (let item of data.Items) {
-          if (Number.isInteger(item.count) && item.count > 0) {
-            graphData.push([ new Date(item.timestamp * 1000), item.count ]);
-          }
-        }
-        cache.snapshotsRange = graphData;
-        this.setState({ data: graphData });
+        cache.snapshotsRange = data;
+        this.setState({ data });
       }, err => {
         console.log(err);
       });
@@ -430,7 +408,7 @@ const Range = React.createClass({
 
   getInitialState() {
     return {
-      data: []
+      data: null
     };
   },
 
@@ -438,35 +416,19 @@ const Range = React.createClass({
     this.loadData();
   },
 
-  componentDidUpdate() {
-    this.dygraph = new Dygraph(
-      document.getElementById('graph'),
-      this.state.data,
-      {
-        labels: [ 'Time', 'Taxis' ],
-        showRangeSelector: true,
-        rollPeriod: 5 * 2, // 5 minutes
-        rangeSelectorHeight: 50,
-        width: 1200,
-        height: 400,
-        legend: 'always',
-        showRoller: true,
-        fillGraph: true,
-        dateWindow: [ moment().subtract(5, 'days'), moment() ],
-        clickCallback: (event, date) => {
-          console.log(date);
-        }
-      }
-    );
-  },
-
   render() {
+    let graph = null;
+    if (this.state.data) {
+      const options = {
+      };
+      graph = <Graph grains={this.state.data.Items} options={options} />;
+      console.log(this.state.data);
+    }
+
     return (
       <div>
         <h2>Total number of taxis for the last {this.props.daysSince} days.</h2>
-        <div id="graph">
-          Loading graph...
-        </div>
+        {graph}
       </div>
     );
   }
@@ -550,6 +512,20 @@ const Graph = React.createClass({
     }
   },
 
+  convertData(grains) {
+    if (!grains) {
+      return null;
+    }
+
+    let graphData = [];
+    for (let item of grains) {;
+      if (Number.isInteger(item.count) && item.count > 0) {
+        graphData.push([ new Date(item.timestamp * 1000), item.count ]);
+      }
+    }
+    return graphData;
+  },
+
   componentDidMount() {
     this.renderGraph();
   },
@@ -564,13 +540,13 @@ const Graph = React.createClass({
     }
     this.dygraph = new Dygraph(
       document.getElementById(this.state.id),
-      this.props.data,
+      this.convertData(this.props.grains),
       this.state.options
     );
   },
 
   render() {
-    console.log(this.props.data.length);
+    console.log('s');
     return (
       <div id={this.state.id}>
         Loading graph...
