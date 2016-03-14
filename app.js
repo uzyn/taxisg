@@ -336,8 +336,11 @@ const AnimationLineChart = React.createClass({
     let graph = null;
     if (this.props.data) {
       const options = {
+        showRangeSelector: false,
+        height: 200,
         dateWindow: [ moment(this.props.data[0].timestamp * 1000).startOf('day'), moment(this.props.data[0].timestamp * 1000).endOf('day') ]
       }
+
       graph = (
         <div>
           <h2>{ moment(this.props.date, 'YYYY-MM-DD').format('dddd, MMMM Do, YYYY') }</h2>
