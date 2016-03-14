@@ -105,7 +105,6 @@ const db = {
       params.KeyConditionExpression = '#d = :d AND #t BETWEEN :ts AND :tt';
       params.ExpressionAttributeValues[':tt'] = to;
     }
-    console.log(params);
 
     if (lastEvaluatedKey) {
       params.ExclusiveStartKey = lastEvaluatedKey;
@@ -256,11 +255,7 @@ const Animation = React.createClass({
         min: moment().subtract(30, 'day').unix(),
         max: moment().subtract(1, 'day').endOf('day').unix(),
       },
-      date: {
-        fromInput: null,
-        dayStart: null,
-        dayEnd: null,
-      },
+      date: null,
       grains: null,
       locations: null
     }
@@ -288,44 +283,45 @@ const Animation = React.createClass({
   },
 
   handleChange(event) {
+    const date = event.target.value;
     const dayStart = moment(event.target.value).startOf('day').unix();
     const dayEnd = moment(event.target.value).endOf('day').unix();
 
     if (dayStart >= this.state.rangeAllowed.min && dayEnd <= this.state.rangeAllowed.max) {
-      this.setState({
-        date: event.target.value,
+      db.countRange(dayStart, dayEnd).then(data => {
+        this.setState({
+          date,
+          grains: data.Items
+        });
       });
     }
   },
 
-  loadGrains() {
-    const dayStart = moment(this.state.date).startOf('day').unix();
-    const dayEnd = moment(this.state.date).endOf('day').unix();
-
-    db.countRange(dayStart, dayEnd).then(data => {
-      console.log(data);
-    });
-  },
-
   render() {
-    if (this.state.date) {
-      this.loadGrains();
-    }
     return (
       <div>
         <div id="animation-date-selector">
           <h2>Select a date</h2>
           <h4>
             <input type="date"
-              min={ moment(this.state.rangeAllowed.min * 1000).format('YYYY-MM-DD') }
-              max={ moment(this.state.rangeAllowed.max * 1000).format('YYYY-MM-DD') }
+              min={moment(this.state.rangeAllowed.min * 1000).format('YYYY-MM-DD')}
+              max={moment(this.state.rangeAllowed.max * 1000).format('YYYY-MM-DD')}
               onChange={this.handleChange}
             />
           </h4>
         </div>
-        <h2>Line chart</h2>
+        <AnimationLineChart data={this.state.grains} />
         <h2>Map with player</h2>
       </div>
+    );
+  }
+});
+
+const AnimationLineChart = React.createClass({
+  render() {
+    console.log(this.props.data);
+    return (
+      <h2>Line Chart</h2>
     );
   }
 });
@@ -425,7 +421,10 @@ const Range = React.createClass({
         legend: 'always',
         showRoller: true,
         fillGraph: true,
-        dateWindow: [ moment().subtract(5, 'days'), moment() ]
+        dateWindow: [ moment().subtract(5, 'days'), moment() ],
+        clickCallback: (event, date) => {
+          console.log(date);
+        }
       }
     );
   },
