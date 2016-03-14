@@ -76,7 +76,7 @@ const db = {
     });
   },
 
-  countRange(since = null, to = null) {
+  countRange(since = null, to = null, lastEvaluatedKey = null) {
     const oldestDays = 60;
     const sinceOldest = moment().subtract(oldestDays, 'days').unix();
 
@@ -86,7 +86,7 @@ const db = {
 
     const params = {
       TableName: this.tables.grains,
-      KeyConditionExpression: '#d = :d AND #t >= :t',
+      KeyConditionExpression: '#d = :d AND #t >= :ts',
       ExpressionAttributeNames: {
         '#d': 'domain',
         '#t': 'timestamp',
@@ -94,15 +94,46 @@ const db = {
       },
       ExpressionAttributeValues: {
         ':d': 1,
-        ':t': since
+        ':ts': since
       },
       ProjectionExpression: '#t, #c',
-      Limit: oldestDays * 86400 * 2,
       ScanIndexForward: true,
       ReturnConsumedCapacity: 'TOTAL'
     };
 
-    return this.queryUntilEnd(params);
+    if (Number.isInteger(to) && to > since) {
+      params.KeyConditionExpression = '#d = :d AND #t BETWEEN :ts AND :tt';
+      params.ExpressionAttributeValues[':tt'] = to;
+    }
+    console.log(params);
+
+    if (lastEvaluatedKey) {
+      params.ExclusiveStartKey = lastEvaluatedKey;
+    }
+
+    return new Promise((resolve, reject) => {
+      docClient.query(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+
+        if (data.LastEvaluatedKey) {
+          this.countRange(since, to, data.LastEvaluatedKey).then(nextData => {
+            data.Items = data.Items.concat(nextData.Items);
+            data.Count += nextData.Count;
+            data.scannedCount += nextData.scannedCount;
+            if (nextData.ConsumedCapacity) {
+              data.ConsumedCapacity.CapacityUnits += nextData.ConsumedCapacity.CapacityUnits;
+            }
+            return resolve(data);
+          }, err => {
+            return reject(err);
+          });
+        } else {
+          return resolve(data);
+        }
+      });
+    });
   },
 
   locations(timestamp) {
@@ -124,37 +155,9 @@ const db = {
     });
   },
 
-  // Query DynamoDB with pagination support
-  // NOTE: Only data.Items are handled, the other fields are not handled (summed/concatenated, etc)
-  queryUntilEnd(params, lastEvaluatedKey = null) {
-    if (lastEvaluatedKey) {
-      params.ExclusiveStartKey = lastEvaluatedKey;
-    }
+  locationsRange(since, to) {
 
-    return new Promise((resolve, reject) => {
-      docClient.query(params, (err, data) => {
-        if (err) {
-          return reject(err);
-        }
-
-        if (data.LastEvaluatedKey) {
-          this.queryUntilEnd(params, data.LastEvaluatedKey).then(nextData => {
-            data.Items = data.Items.concat(nextData.Items);
-            data.Count += nextData.Count;
-            data.scannedCount += nextData.scannedCount;
-            if (nextData.ConsumedCapacity) {
-              data.ConsumedCapacity.CapacityUnits += nextData.ConsumedCapacity.CapacityUnits;
-            }
-            return resolve(data);
-          }, err => {
-            return reject(err);
-          });
-        } else {
-          return resolve(data);
-        }
-      });
-    });
-  }
+  },
 }
 
 /**
@@ -162,7 +165,8 @@ const db = {
  */
 const cache = {
   snapshotsRange: null,
-  earliestTimestamp: null
+  earliestTimestamp: null,
+  animation: []
 };
 
 /**
@@ -248,7 +252,10 @@ const Snapshots = React.createClass({
 const Animation = React.createClass({
   getInitialState() {
     return {
-      earliestTimestamp: moment().subtract(30, 'day').unix()
+      earliestTimestamp: moment().subtract(30, 'day').unix(),
+      date: null,
+      grains: null,
+      locations: null
     }
   },
 
@@ -267,12 +274,35 @@ const Animation = React.createClass({
     }
   },
 
+  handleChange(event) {
+    this.setState({
+      date: event.target.value
+    });
+  },
+
+  loadGrains() {
+    console.log(this.state.date + ' 00:00:00');
+    db.countRange(
+      moment(this.state.date + ' 00:00:00', 'YYYY-MM-DD HH:mm:ss').unix(),
+      moment(this.state.date + ' 23:59:59', 'YYYY-MM-DD HH:mm:ss').unix()
+    ).then(data => {
+      console.log(data);
+    });
+  },
+
   render() {
+
+    console.log(this.state);
+    if (this.state.date) {
+      this.loadGrains();
+    }
     return (
       <div>
         <div id="animation-date-selector">
-          <h3>Select a date</h3>
-          <h4><input type="date" min={ moment(this.state.earliestTimestamp * 1000).format('YYYY-MM-DD') } max={ moment().subtract(1, 'day').format('YYYY-MM-DD') }/></h4>
+          <h3>Select a day</h3>
+          <h4>
+            <input type="date" min={ moment(this.state.earliestTimestamp * 1000).format('YYYY-MM-DD') } max={ moment().subtract(1, 'day').format('YYYY-MM-DD') } onChange={this.handleChange} />
+          </h4>
         </div>
       </div>
     );
