@@ -252,8 +252,15 @@ const Snapshots = React.createClass({
 const Animation = React.createClass({
   getInitialState() {
     return {
-      earliestTimestamp: moment().subtract(30, 'day').unix(),
-      date: null,
+      rangeAllowed: {
+        min: moment().subtract(30, 'day').unix(),
+        max: moment().subtract(1, 'day').endOf('day').unix(),
+      },
+      date: {
+        fromInput: null,
+        dayStart: null,
+        dayEnd: null,
+      },
       grains: null,
       locations: null
     }
@@ -264,46 +271,60 @@ const Animation = React.createClass({
       db.earliest().then(data => {
         cache.earliestTimestamp = data.Items[0].timestamp;
         this.setState({
-          earliestTimestamp: cache.earliestTimestamp
+          rangeAllowed: {
+            min: moment(cache.earliestTimestamp * 1000).startOf('day').unix(),
+            max: moment().subtract(1, 'day').endOf('day').unix(),
+          },
         });
       });
     } else {
       this.setState({
-        earliestTimestamp: cache.earliestTimestamp
+        rangeAllowed: {
+          min: moment(cache.earliestTimestamp * 1000).startOf('day').unix(),
+          max: moment().subtract(1, 'day').endOf('day').unix(),
+        },
       });
     }
   },
 
   handleChange(event) {
-    this.setState({
-      date: event.target.value
-    });
+    const dayStart = moment(event.target.value).startOf('day').unix();
+    const dayEnd = moment(event.target.value).endOf('day').unix();
+
+    if (dayStart >= this.state.rangeAllowed.min && dayEnd <= this.state.rangeAllowed.max) {
+      this.setState({
+        date: event.target.value,
+      });
+    }
   },
 
   loadGrains() {
-    console.log(this.state.date + ' 00:00:00');
-    db.countRange(
-      moment(this.state.date + ' 00:00:00', 'YYYY-MM-DD HH:mm:ss').unix(),
-      moment(this.state.date + ' 23:59:59', 'YYYY-MM-DD HH:mm:ss').unix()
-    ).then(data => {
+    const dayStart = moment(this.state.date).startOf('day').unix();
+    const dayEnd = moment(this.state.date).endOf('day').unix();
+
+    db.countRange(dayStart, dayEnd).then(data => {
       console.log(data);
     });
   },
 
   render() {
-
-    console.log(this.state);
     if (this.state.date) {
       this.loadGrains();
     }
     return (
       <div>
         <div id="animation-date-selector">
-          <h3>Select a day</h3>
+          <h2>Select a date</h2>
           <h4>
-            <input type="date" min={ moment(this.state.earliestTimestamp * 1000).format('YYYY-MM-DD') } max={ moment().subtract(1, 'day').format('YYYY-MM-DD') } onChange={this.handleChange} />
+            <input type="date"
+              min={ moment(this.state.rangeAllowed.min * 1000).format('YYYY-MM-DD') }
+              max={ moment(this.state.rangeAllowed.max * 1000).format('YYYY-MM-DD') }
+              onChange={this.handleChange}
+            />
           </h4>
         </div>
+        <h2>Line chart</h2>
+        <h2>Map with player</h2>
       </div>
     );
   }
