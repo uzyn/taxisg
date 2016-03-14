@@ -9,10 +9,6 @@ AWS.config.update({
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
-const cache = {
-  snapshotsRange: null
-};
-
 const db = {
   tables: {
     grains: 'taxisg.grains',
@@ -52,6 +48,34 @@ const db = {
     });
   },
 
+  earliest() {
+    const params = {
+      TableName: this.tables.grains,
+      KeyConditionExpression: '#d = :d',
+      ExpressionAttributeNames: {
+        '#d': 'domain',
+        '#t': 'timestamp',
+        '#c': 'count'
+      },
+      ExpressionAttributeValues: {
+        ':d': 1
+      },
+      ProjectionExpression: '#t, #c',
+      Limit: 1,
+      ScanIndexForward: true,
+      ReturnConsumedCapacity: 'TOTAL'
+    };
+
+    return new Promise((resolve, reject) => {
+      docClient.query(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(data);
+      });
+    });
+  },
+
   countRange(since = null, to = null) {
     const oldestDays = 60;
     const sinceOldest = moment().subtract(oldestDays, 'days').unix();
@@ -78,7 +102,7 @@ const db = {
       ReturnConsumedCapacity: 'TOTAL'
     };
 
-    return this.query(params);
+    return this.queryUntilEnd(params);
   },
 
   locations(timestamp) {
@@ -102,7 +126,7 @@ const db = {
 
   // Query DynamoDB with pagination support
   // NOTE: Only data.Items are handled, the other fields are not handled (summed/concatenated, etc)
-  query(params, lastEvaluatedKey = null) {
+  queryUntilEnd(params, lastEvaluatedKey = null) {
     if (lastEvaluatedKey) {
       params.ExclusiveStartKey = lastEvaluatedKey;
     }
@@ -114,7 +138,7 @@ const db = {
         }
 
         if (data.LastEvaluatedKey) {
-          this.query(params, data.LastEvaluatedKey).then(nextData => {
+          this.queryUntilEnd(params, data.LastEvaluatedKey).then(nextData => {
             data.Items = data.Items.concat(nextData.Items);
             data.Count += nextData.Count;
             data.scannedCount += nextData.scannedCount;
@@ -134,6 +158,14 @@ const db = {
 }
 
 /**
+ * Cache
+ */
+const cache = {
+  snapshotsRange: null,
+  earliestTimestamp: null
+};
+
+/**
  * React
  */
 const App = React.createClass({
@@ -149,7 +181,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      option: 'snapshots'
+      //option: 'snapshots'
+      option: 'animation'
     }
   },
 
@@ -213,9 +246,35 @@ const Snapshots = React.createClass({
 });
 
 const Animation = React.createClass({
+  getInitialState() {
+    return {
+      earliestTimestamp: moment().subtract(30, 'day').unix()
+    }
+  },
+
+  componentDidMount() {
+    if (!cache.earliestTimestamp) {
+      db.earliest().then(data => {
+        cache.earliestTimestamp = data.Items[0].timestamp;
+        this.setState({
+          earliestTimestamp: cache.earliestTimestamp
+        });
+      });
+    } else {
+      this.setState({
+        earliestTimestamp: cache.earliestTimestamp
+      });
+    }
+  },
+
   render() {
     return (
-      <h2>Animation</h2>
+      <div>
+        <div id="animation-date-selector">
+          <h3>Select a date</h3>
+          <h4><input type="date" min={ moment(this.state.earliestTimestamp * 1000).format('YYYY-MM-DD') } max={ moment().subtract(1, 'day').format('YYYY-MM-DD') }/></h4>
+        </div>
+      </div>
     );
   }
 });
@@ -306,7 +365,7 @@ const Range = React.createClass({
       document.getElementById('graph'),
       this.state.data,
       {
-        labels: [ 'time', 'Total taxis' ],
+        labels: [ 'Time', 'Taxis' ],
         showRangeSelector: true,
         rollPeriod: 5 * 2, // 5 minutes
         rangeSelectorHeight: 50,
