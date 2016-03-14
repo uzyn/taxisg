@@ -301,7 +301,7 @@ const Animation = React.createClass({
     return (
       <div>
         <div id="animation-date-selector">
-          <h2>Select a date</h2>
+          <h2>Select date</h2>
           <h4>
             <input type="date"
               min={moment(this.state.rangeAllowed.min * 1000).format('YYYY-MM-DD')}
@@ -310,7 +310,7 @@ const Animation = React.createClass({
             />
           </h4>
         </div>
-        <AnimationLineChart data={this.state.grains} />
+        <AnimationLineChart data={this.state.grains} date={this.state.date} />
         <h2>Map with player</h2>
       </div>
     );
@@ -318,10 +318,38 @@ const Animation = React.createClass({
 });
 
 const AnimationLineChart = React.createClass({
+  convertData(data) {
+    if (!data) {
+      return null;
+    }
+
+    let graphData = [];
+    for (let item of data) {;
+      if (Number.isInteger(item.count) && item.count > 0) {
+        graphData.push([ new Date(item.timestamp * 1000), item.count ]);
+      }
+    }
+    return graphData;
+  },
+
   render() {
-    console.log(this.props.data);
+    let graph = null;
+    if (this.props.data) {
+      const options = {
+        dateWindow: [ moment(this.props.data[0].timestamp * 1000).startOf('day'), moment(this.props.data[0].timestamp * 1000).endOf('day') ]
+      }
+      graph = (
+        <div>
+          <h2>{ moment(this.props.date, 'YYYY-MM-DD').format('dddd, MMMM Do, YYYY') }</h2>
+          <Graph data={this.convertData(this.props.data)} options={options} />
+        </div>
+      );
+    }
+
     return (
-      <h2>Line Chart</h2>
+      <div>
+      {graph}
+      </div>
     );
   }
 });
@@ -492,6 +520,57 @@ const MapArea = React.createClass({
     return (
       <div id="map">
         Loading map...
+      </div>
+    );
+  }
+});
+
+const Graph = React.createClass({
+  getInitialState() {
+    return {
+      id: 'graph' + Math.floor(Math.random() * 1000000000000).toString(),
+      options: {
+        labels: [ 'Time', 'Taxis' ],
+        showRangeSelector: true,
+        rollPeriod: 5 * 2, // 5 minutes
+        rangeSelectorHeight: 50,
+        width: 1200,
+        height: 400,
+        legend: 'always',
+        showRoller: true,
+        fillGraph: true,
+        dateWindow: [ moment().subtract(5, 'days'), moment() ],
+        clickCallback: (event, date) => {
+          console.log(date);
+        }
+      }
+    }
+  },
+
+  componentDidMount() {
+    this.renderGraph();
+  },
+  componentDidUpdate() {
+    this.renderGraph();
+  },
+
+  renderGraph() {
+    let options = this.state.options;
+    for (let option in this.props.options) {
+      this.state.options[option] = this.props.options[option];
+    }
+    this.dygraph = new Dygraph(
+      document.getElementById(this.state.id),
+      this.props.data,
+      this.state.options
+    );
+  },
+
+  render() {
+    console.log(this.props.data.length);
+    return (
+      <div id={this.state.id}>
+        Loading graph...
       </div>
     );
   }
