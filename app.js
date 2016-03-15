@@ -461,6 +461,7 @@ const Range = React.createClass({
 
 const MapArea = React.createClass({
   map: null,
+  mapDiv: null,
   heatmap: null,
 
   getInitialState() {
@@ -473,16 +474,16 @@ const MapArea = React.createClass({
   componentDidMount() {
     let styles = [
       {
-        "stylers": [
-          { "hue": "#e500ff" },
-          { "invert_lightness": true },
-          { "saturation": -20 },
+        stylers: [
+          { hue: '#e500ff' },
+          { invert_lightness: true },
+          { saturation: -20 },
           { lightness: -20 }
         ]
       }
     ];
 
-    this.map = new google.maps.Map(document.getElementById('map'), {
+    this.map = new google.maps.Map(this.mapDiv, {
       center: { lat: 1.35763, lng: 103.816797 },
       zoom: 12,
       minZoom: 12,
@@ -508,7 +509,7 @@ const MapArea = React.createClass({
     }
 
     return (
-      <div id="map">
+      <div className="map" ref={(div) => this.mapDiv = div}>
         Loading map...
       </div>
     );
@@ -516,9 +517,10 @@ const MapArea = React.createClass({
 });
 
 const Graph = React.createClass({
+  graphDiv: null,
+
   getInitialState() {
     return {
-      id: 'graph' + Math.floor(Math.random() * 1000000000000).toString(),
       options: {
         labels: [ 'Time', 'Taxis' ],
         showRangeSelector: true,
@@ -564,7 +566,7 @@ const Graph = React.createClass({
       this.state.options[option] = this.props.options[option];
     }
     this.dygraph = new Dygraph(
-      document.getElementById(this.state.id),
+      this.graphDiv,
       this.convertData(this.props.grains),
       this.state.options
     );
@@ -572,7 +574,7 @@ const Graph = React.createClass({
 
   render() {
     return (
-      <div id={this.state.id}>
+      <div ref={(div) => this.graphDiv = div}>
         Loading graph...
       </div>
     );
