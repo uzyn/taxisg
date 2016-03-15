@@ -161,7 +161,7 @@ const db = {
     });
   },
 
-  locationsAcross(timestamps, step = 150) {
+  locationsAcross(timestamps, step = 20) {
     console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
@@ -461,6 +461,21 @@ const MapWithPlayer = React.createClass({
     });
   },
 
+  moveFwd(by = 1) {
+    let pointer = this.state.pointer + by;
+
+    if (pointer >= this.state.timestamps.length) {
+      pointer = 0;
+    }
+    if (pointer < 0) {
+      pointer = this.state.timestamps.length - 1;
+    }
+
+    this.setState({
+      pointer
+    });
+  },
+
   componentWillUpdate() {
     this.state.heatmapData.clear();
   },
@@ -477,20 +492,66 @@ const MapWithPlayer = React.createClass({
       <div>
         <h3 className="text-center">{moment(timestamp * 1000).format('HH:mm:ss')}</h3>
         <div className="map" ref={(div) => this.mapDiv = div}></div>
-        <PlayerButtons />
+        <PlayerButtons moveFwd={this.moveFwd} />
       </div>
     );
   }
 });
 
 const PlayerButtons = React.createClass({
+  playTimer: null,
+
+  getInitialState() {
+    return {
+      playing: false
+    }
+  },
+
+  handlePlay() {
+    let shouldPlay = !this.state.playing;
+    
+    if (shouldPlay) {
+      this.playTimer = setInterval(() => this.props.moveFwd(1), 500);
+    } else {
+      clearInterval(this.playTimer);
+    }
+
+    this.setState({
+      playing: shouldPlay
+    });
+  },
+
+  handleStep(forward = true) {
+    let by = 1;
+    if (!forward) {
+      by = -1;
+    }
+    this.props.moveFwd(by);
+  },
+
   render() {
+    let classes = {
+      back: 'btn btn-default',
+      play: 'btn btn-default btn-primary',
+      fwd: 'btn btn-default'
+    };
+    let labels = {
+      play: 'Play'
+    }
+
+    if (this.state.playing) {
+      classes.back += ' disabled';
+      classes.fwd += ' disabled';
+      classes.play += ' btn-info';
+      labels.play = 'Pause';
+    }
+
     return (
       <div className="player-buttons">
         <div className="btn-group">
-          <button type="button" className="btn btn-default">&lt;</button>
-          <button type="button" className="btn btn-primary btn-default">Play</button>
-          <button type="button" className="btn btn-default">&gt;</button>
+          <button type="button" className={classes.back} onClick={() => this.handleStep(false)}>&lt;</button>
+          <button type="button" className={classes.play} onClick={this.handlePlay}>{labels.play}</button>
+          <button type="button" className={classes.fwd} onClick={() => this.handleStep(true)}>&gt;</button>
         </div>
       </div>
     );
