@@ -202,8 +202,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      //option: 'snapshots'
-      option: 'animation',
+      option: 'snapshots'
+      //option: 'animation',
     }
   },
 
