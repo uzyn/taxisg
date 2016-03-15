@@ -9,6 +9,8 @@ AWS.config.update({
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
+let ddbConsumption = 0;
+
 const db = {
   tables: {
     grains: 'taxisg.grains',
@@ -43,6 +45,7 @@ const db = {
         if (err) {
           return reject(err);
         }
+        ddbConsumption += data.ConsumedCapacity.CapacityUnits;
         return resolve(data);
       });
     });
@@ -71,6 +74,7 @@ const db = {
         if (err) {
           return reject(err);
         }
+        ddbConsumption += data.ConsumedCapacity.CapacityUnits;
         return resolve(data);
       });
     });
@@ -129,6 +133,7 @@ const db = {
             return reject(err);
           });
         } else {
+          ddbConsumption += data.ConsumedCapacity.CapacityUnits;
           return resolve(data);
         }
       });
@@ -150,6 +155,7 @@ const db = {
         if (err) {
           return reject(err);
         }
+        ddbConsumption += data.ConsumedCapacity.CapacityUnits;
         return resolve(data);
       });
     });
@@ -197,13 +203,14 @@ const App = React.createClass({
   getInitialState() {
     return {
       //option: 'snapshots'
-      option: 'animation'
+      option: 'animation',
     }
   },
 
   render() {
     return (
       <div id="app-proper">
+        <DynamoDBStatus ddbConsumption={this.props.ddbConsumption} />
         <div className="text-center">
           <h1>Singapore taxis</h1>
           <div className="btn-group btn-group-lg" role="group">
@@ -564,10 +571,36 @@ const Graph = React.createClass({
   },
 
   render() {
-    console.log('s');
     return (
       <div id={this.state.id}>
         Loading graph...
+      </div>
+    );
+  }
+});
+
+const DynamoDBStatus = React.createClass({
+  getInitialState() {
+    return {
+      ddbConsumption
+    }
+  },
+
+  componentDidMount() {
+    setInterval(() => {
+      if (ddbConsumption !== this.state.ddbConsumption) {
+        console.log('poll');
+        this.setState({
+          ddbConsumption
+        });
+      }
+    }, 200);
+  },
+
+  render() {
+    return (
+      <div className="dynamodb-status">
+        Total consumed DynamoDB capacity units: {this.state.ddbConsumption}
       </div>
     );
   }
