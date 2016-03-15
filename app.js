@@ -136,6 +136,7 @@ const db = {
   },
 
   locations(timestamp) {
+    console.log('Loading locations for ' + moment(timestamp * 1000).format());
     const params = {
       TableName: this.tables.locations,
       Key: {
@@ -154,9 +155,20 @@ const db = {
     });
   },
 
-  locationsRange(since, to) {
-
-  },
+  locationsAcross(timestamps, step = 20) {
+    console.log(timestamps.length);
+    if (step > 1) {
+      timestamps = timestamps.filter(
+        (timestamp, i) => {
+          return (i % step === 0);
+        }
+      );
+    }
+    let locationPromises = timestamps.map(
+      (timestamp) => this.locations(timestamp)
+    );
+    return Promise.all(locationPromises);
+  }
 }
 
 /**
@@ -184,8 +196,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      option: 'snapshots'
-      //option: 'animation'
+      //option: 'snapshots'
+      option: 'animation'
     }
   },
 
@@ -293,6 +305,12 @@ const Animation = React.createClass({
           date,
           grains: data.Items
         });
+
+        return db.locationsAcross(data.Items.map(
+          (item) => item.timestamp
+        ));
+      }).then(data => {
+        console.log(data);
       });
     }
   },
