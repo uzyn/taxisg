@@ -511,7 +511,7 @@ const PlayerButtons = React.createClass({
     let shouldPlay = !this.state.playing;
     
     if (shouldPlay) {
-      this.playTimer = setInterval(() => this.props.moveFwd(1), 500);
+      this.playTimer = setInterval(() => this.props.moveFwd(1), 1000);
     } else {
       clearInterval(this.playTimer);
     }
@@ -521,10 +521,10 @@ const PlayerButtons = React.createClass({
     });
   },
 
-  handleStep(forward = true) {
-    let by = 1;
+  handleStep(forward = true, speed = 1) {
+    let by = speed;
     if (!forward) {
-      by = -1;
+      by = -1 * speed;
     }
     this.props.moveFwd(by);
   },
@@ -549,9 +549,11 @@ const PlayerButtons = React.createClass({
     return (
       <div className="player-buttons">
         <div className="btn-group">
+          <button type="button" className={classes.back} onClick={() => this.handleStep(false, 5)}>&lt;&lt;</button>
           <button type="button" className={classes.back} onClick={() => this.handleStep(false)}>&lt;</button>
           <button type="button" className={classes.play} onClick={this.handlePlay}>{labels.play}</button>
           <button type="button" className={classes.fwd} onClick={() => this.handleStep(true)}>&gt;</button>
+          <button type="button" className={classes.fwd} onClick={() => this.handleStep(true, 5)}>&gt;&gt;</button>
         </div>
       </div>
     );
