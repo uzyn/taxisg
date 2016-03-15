@@ -183,7 +183,7 @@ const db = {
 const cache = {
   snapshotsRange: null,
   earliestTimestamp: null,
-  animation: []
+  animations: []
 };
 
 /**
@@ -276,7 +276,8 @@ const Animation = React.createClass({
       },
       date: null,
       grains: null,
-      locations: null
+      locations: null,
+      mapLoading: false
     }
   },
 
@@ -307,22 +308,37 @@ const Animation = React.createClass({
     const dayEnd = moment(event.target.value).endOf('day').unix();
 
     if (dayStart >= this.state.rangeAllowed.min && dayEnd <= this.state.rangeAllowed.max) {
-      db.countRange(dayStart, dayEnd).then(data => {
+      if (!cache.animations[date]) {
+        db.countRange(dayStart, dayEnd).then(data => {
+          this.setState({
+            date,
+            grains: data.Items,
+            mapLoading: true
+          });
+          return db.locationsAcross(data.Items.map(
+            (item) => item.timestamp
+          ));
+        }).then(data => {
+          cache.animations[date] = {
+            grains: this.state.grains,
+            locationsAcross: data
+          };
+          this.setState({
+            mapLoading: false
+          });
+          console.log(data);
+        });
+      } else {
         this.setState({
           date,
-          grains: data.Items
+          grains: cache.animations[date].grains
         });
-
-        return db.locationsAcross(data.Items.map(
-          (item) => item.timestamp
-        ));
-      }).then(data => {
-        console.log(data);
-      });
+      }
     }
   },
 
   render() {
+    console.log(this.state);
     return (
       <div>
         <div id="animation-date-selector">
@@ -336,7 +352,7 @@ const Animation = React.createClass({
           </h4>
         </div>
         <AnimationLineChart data={this.state.grains} date={this.state.date} />
-        <h2>Map with player</h2>
+        <MapWithPlayer loading={this.state.mapLoading} />
       </div>
     );
   }
@@ -363,6 +379,21 @@ const AnimationLineChart = React.createClass({
     return (
       <div>
       {graph}
+      </div>
+    );
+  }
+});
+
+const MapWithPlayer = React.createClass({
+  render() {
+    let loading = '';
+    if (this.props.loading) {
+      loading = <h3 className="text-center">Loading animation data...</h3>;
+    }
+
+    return (
+      <div>
+        {loading}
       </div>
     );
   }
@@ -602,7 +633,7 @@ const DynamoDBStatus = React.createClass({
   render() {
     return (
       <div className="dynamodb-status">
-        Total consumed DynamoDB capacity units: {this.state.ddbConsumption}
+        DynamoDB capacity units consumed: {this.state.ddbConsumption}
       </div>
     );
   }
