@@ -161,7 +161,7 @@ const db = {
     });
   },
 
-  locationsAcross(timestamps, step = 150) {
+  locationsAcross(timestamps, step = 20) {
     console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
@@ -499,6 +499,8 @@ const MapWithPlayer = React.createClass({
 });
 
 const PlayerButtons = React.createClass({
+  playTimer: null,
+
   getInitialState() {
     return {
       playing: false
@@ -506,8 +508,16 @@ const PlayerButtons = React.createClass({
   },
 
   handlePlay() {
+    let shouldPlay = !this.state.playing;
+    
+    if (shouldPlay) {
+      this.playTimer = setInterval(() => this.props.moveFwd(1), 500);
+    } else {
+      clearInterval(this.playTimer);
+    }
+
     this.setState({
-      playing: !this.state.playing
+      playing: shouldPlay
     });
   },
 
