@@ -161,7 +161,7 @@ const db = {
     });
   },
 
-  locationsAcross(timestamps, step = 20) {
+  locationsAcross(timestamps, step = 100) {
     console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
@@ -202,8 +202,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      option: 'snapshots'
-      //option: 'animation',
+      //option: 'snapshots'
+      option: 'animation',
     }
   },
 
@@ -276,7 +276,7 @@ const Animation = React.createClass({
       },
       date: null,
       grains: null,
-      locations: null,
+      dayLocations: null,
       mapLoading: false
     }
   },
@@ -321,24 +321,35 @@ const Animation = React.createClass({
         }).then(data => {
           cache.animations[date] = {
             grains: this.state.grains,
-            locationsAcross: data
+            dayLocations: data
           };
           this.setState({
-            mapLoading: false
+            mapLoading: false,
+            dayLocations: data
           });
-          console.log(data);
         });
       } else {
         this.setState({
           date,
-          grains: cache.animations[date].grains
+          grains: cache.animations[date].grains,
+          dayLocations: cache.animations[date].dayLocations,
+          mapLoading: false
         });
       }
     }
   },
 
   render() {
-    console.log(this.state);
+    let mapWithPlayer = '';
+    if (this.state.mapLoading) {
+      mapWithPlayer = <h3 className="text-center">Loading animation data...</h3>;
+    } else {
+      if (this.state.dayLocations) {
+        mapWithPlayer = <MapWithPlayer data={this.state.dayLocations} />
+      }
+    }
+
+
     return (
       <div>
         <div id="animation-date-selector">
@@ -352,7 +363,7 @@ const Animation = React.createClass({
           </h4>
         </div>
         <AnimationLineChart data={this.state.grains} date={this.state.date} />
-        <MapWithPlayer loading={this.state.mapLoading} />
+        {mapWithPlayer}
       </div>
     );
   }
@@ -364,13 +375,13 @@ const AnimationLineChart = React.createClass({
     if (this.props.data) {
       const options = {
         showRangeSelector: false,
-        height: 200,
+        height: 180,
         dateWindow: [ moment(this.props.data[0].timestamp * 1000).startOf('day'), moment(this.props.data[0].timestamp * 1000).endOf('day') ]
       }
 
       graph = (
         <div>
-          <h2>{ moment(this.props.date, 'YYYY-MM-DD').format('dddd, MMMM Do, YYYY') }</h2>
+          <h2 className="text-center">{ moment(this.props.date, 'YYYY-MM-DD').format('dddd, MMMM Do, YYYY') }</h2>
           <Graph grains={this.props.data} options={options} />
         </div>
       );
@@ -385,15 +396,102 @@ const AnimationLineChart = React.createClass({
 });
 
 const MapWithPlayer = React.createClass({
-  render() {
-    let loading = '';
-    if (this.props.loading) {
-      loading = <h3 className="text-center">Loading animation data...</h3>;
+  map: null,
+  mapDiv: null,
+  heatmap: null,
+
+  getInitialState() {
+    return {
+      timestamps: [],
+      dayLocations: [],
+      pointer: null,
+      heatmapData: new google.maps.MVCArray()
+    }
+  },
+
+  componentDidMount() {
+    this.processData();
+
+    let styles = [
+      {
+        stylers: [
+          { hue: '#e500ff' },
+          { invert_lightness: true },
+          { saturation: -20 },
+          { lightness: -20 }
+        ]
+      }
+    ];
+
+    this.map = new google.maps.Map(this.mapDiv, {
+      center: { lat: 1.35763, lng: 103.816797 },
+      zoom: 12,
+      minZoom: 12,
+      //maxZoom: 16,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      styles: styles
+    });
+
+    this.heatmap = new google.maps.visualization.HeatmapLayer({
+      data: this.state.heatmapData,
+      radius: 15,
+      map: this.map
+    });
+  },
+
+  componentWillUpdate() {
+    this.state.heatmapData.clear();
+    /*
+    if (this.props.data) {
+      this.processData();
+    }
+    */
+  },
+
+  processData() {
+    let timestamps = [];
+    let dayLocations = [];
+
+    for (let row of this.props.data) {
+      timestamps.push(row.Item.timestamp);
+      dayLocations[row.Item.timestamp] = row.Item.locations;
     }
 
+    this.setState({
+      timestamps,
+      dayLocations,
+      pointer: timestamps[0]
+    });
+    console.log('boom', this.state);
+  },
+
+  render() {
+    let mapParentClass = 'mapAndPlayer hidden';
+    if (this.state.pointer) {
+      mapParentClass = 'mapAndPlayer';
+    }
+
+    console.log('here', this.state);
+//<div className={mapParentClass}>
     return (
       <div>
-        {loading}
+        <h3 className="text-center">{moment(this.state.pointer * 1000).format('HH:mm:ss')}</h3>
+        <div className="map" ref={(div) => this.mapDiv = div}></div>
+        <PlayerButtons />
+      </div>
+    );
+  }
+});
+
+const PlayerButtons = React.createClass({
+  render() {
+    return (
+      <div className="player-buttons">
+        <div className="btn-group">
+          <button type="button" className="btn btn-default">&lt;</button>
+          <button type="button" className="btn btn-default">Play</button>
+          <button type="button" className="btn btn-default">&gt;</button>
+        </div>
       </div>
     );
   }
@@ -622,7 +720,6 @@ const DynamoDBStatus = React.createClass({
   componentDidMount() {
     setInterval(() => {
       if (ddbConsumption !== this.state.ddbConsumption) {
-        console.log('poll');
         this.setState({
           ddbConsumption
         });

@@ -8,8 +8,12 @@
    width: 1200px;
 }
 
-
 #animation-date-selector {
   margin-top: 20px;
+  text-align: center;
+}
+
+.player-buttons {
+  margin: 10px auto;
   text-align: center;
 }
