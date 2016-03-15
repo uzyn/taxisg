@@ -484,13 +484,41 @@ const MapWithPlayer = React.createClass({
 });
 
 const PlayerButtons = React.createClass({
+  getInitialState() {
+    return {
+      playing: false
+    }
+  },
+
+  handlePlay() {
+    this.setState({
+      playing: !this.state.playing
+    });
+  },
+
   render() {
+    let classes = {
+      back: 'btn btn-default',
+      play: 'btn btn-default btn-primary',
+      fwd: 'btn btn-default'
+    };
+    let labels = {
+      play: 'Play'
+    }
+
+    if (this.state.playing) {
+      classes.back += ' disabled';
+      classes.fwd += ' disabled';
+      classes.play += ' btn-info';
+      labels.play = 'Pause';
+    }
+
     return (
       <div className="player-buttons">
         <div className="btn-group">
-          <button type="button" className="btn btn-default">&lt;</button>
-          <button type="button" className="btn btn-primary btn-default">Play</button>
-          <button type="button" className="btn btn-default">&gt;</button>
+          <button type="button" className={classes.back}>&lt;</button>
+          <button type="button" className={classes.play} onClick={this.handlePlay}>{labels.play}</button>
+          <button type="button" className={classes.fwd}>&gt;</button>
         </div>
       </div>
     );
