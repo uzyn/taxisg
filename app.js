@@ -161,7 +161,7 @@ const db = {
     });
   },
 
-  locationsAcross(timestamps, step = 100) {
+  locationsAcross(timestamps, step = 150) {
     console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
@@ -332,9 +332,16 @@ const Animation = React.createClass({
         this.setState({
           date,
           grains: cache.animations[date].grains,
-          dayLocations: cache.animations[date].dayLocations,
-          mapLoading: false
+          mapLoading: true
         });
+
+        // Force remounting of map
+        setTimeout(() => {
+          this.setState({
+            dayLocations: cache.animations[date].dayLocations,
+            mapLoading: false
+          });
+        }, 500);
       }
     }
   },
@@ -348,7 +355,6 @@ const Animation = React.createClass({
         mapWithPlayer = <MapWithPlayer data={this.state.dayLocations} />
       }
     }
-
 
     return (
       <div>
@@ -439,15 +445,6 @@ const MapWithPlayer = React.createClass({
     });
   },
 
-  componentWillUpdate() {
-    this.state.heatmapData.clear();
-    /*
-    if (this.props.data) {
-      this.processData();
-    }
-    */
-  },
-
   processData() {
     let timestamps = [];
     let dayLocations = [];
@@ -460,22 +457,25 @@ const MapWithPlayer = React.createClass({
     this.setState({
       timestamps,
       dayLocations,
-      pointer: timestamps[0]
+      pointer: 0
     });
-    console.log('boom', this.state);
+  },
+
+  componentWillUpdate() {
+    this.state.heatmapData.clear();
   },
 
   render() {
-    let mapParentClass = 'mapAndPlayer hidden';
-    if (this.state.pointer) {
-      mapParentClass = 'mapAndPlayer';
+    let timestamp = this.state.timestamps[this.state.pointer];
+    if (this.state.dayLocations[timestamp]) {
+      for (let location of this.state.dayLocations[timestamp]) {
+        this.state.heatmapData.push(new google.maps.LatLng(location));
+      }
     }
 
-    console.log('here', this.state);
-//<div className={mapParentClass}>
     return (
       <div>
-        <h3 className="text-center">{moment(this.state.pointer * 1000).format('HH:mm:ss')}</h3>
+        <h3 className="text-center">{moment(timestamp * 1000).format('HH:mm:ss')}</h3>
         <div className="map" ref={(div) => this.mapDiv = div}></div>
         <PlayerButtons />
       </div>
@@ -489,7 +489,7 @@ const PlayerButtons = React.createClass({
       <div className="player-buttons">
         <div className="btn-group">
           <button type="button" className="btn btn-default">&lt;</button>
-          <button type="button" className="btn btn-default">Play</button>
+          <button type="button" className="btn btn-primary btn-default">Play</button>
           <button type="button" className="btn btn-default">&gt;</button>
         </div>
       </div>
