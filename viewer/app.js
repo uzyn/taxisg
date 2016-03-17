@@ -217,8 +217,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      //option: 'snapshots'
-      option: 'animation',
+      option: 'snapshots'
+      //option: 'animation',
     }
   },
 
@@ -542,7 +542,7 @@ const MapWithPlayer = React.createClass({
 
     return (
       <div>
-        <h3 className="text-center">{moment(timestamp * 1000).format('HH:mm:ss')}</h3>
+        <h3 className="text-center">{moment(timestamp * 1000).format('h:mm:ss a')}</h3>
         <div className="map" ref={(div) => this.mapDiv = div}></div>
         <PlayerButtons moveFwd={this.moveFwd} />
       </div>
@@ -563,7 +563,7 @@ const PlayerButtons = React.createClass({
     let shouldPlay = !this.state.playing;
 
     if (shouldPlay) {
-      this.playTimer = setInterval(() => this.props.moveFwd(1), 500);
+      this.playTimer = setInterval(() => this.props.moveFwd(1), 750);
     } else {
       clearInterval(this.playTimer);
     }
