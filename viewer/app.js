@@ -174,7 +174,7 @@ const db = {
     return new Promise((resolve, reject) => {
       const execute = (results = [], iterator = 0) => {
         let timestamp = timestamps[iterator];
-        this.locationsAcrossLoadingProgress = Math.round(iterator / timestamps.length * 100 * 10) / 10;
+        this.locationsAcrossLoadingProgress = Math.round((iterator + 1) / timestamps.length * 100 * 10) / 10;
         this.locations(timestamp).then(data => {
           results.push(data);
 
@@ -217,8 +217,8 @@ const App = React.createClass({
 
   getInitialState() {
     return {
-      option: 'snapshots'
-      //option: 'animation',
+      //option: 'snapshots'
+      option: 'animation',
     }
   },
 
@@ -389,13 +389,17 @@ const Animation = React.createClass({
   render() {
     let mapWithPlayer = '';
     if (this.state.mapLoading) {
-      mapWithPlayer = (
-        <h3 className="text-center">
-          <p>&nbsp;</p>
-          {this.state.loadingProgress}%<br />
-          Loading animation data...
-        </h3>
-      );
+      if (this.state.loadingProgress >= 99) {
+        mapWithPlayer = <h3 className="text-center"><p>&nbsp;</p>Processing animation data...</h3>
+      } else {
+        mapWithPlayer = (
+          <h3 className="text-center">
+            <p>&nbsp;</p>
+            {this.state.loadingProgress}%<br />
+            Loading animation data...
+          </h3>
+        );
+      }
     } else {
       this.clearLoadingProgressMonitor();
       if (this.state.dayLocations) {
@@ -458,7 +462,7 @@ const MapWithPlayer = React.createClass({
       timestamps: [],
       dayLocations: [],
       pointer: null,
-      heatmapData: new google.maps.MVCArray()
+      heatmapDatasets: []
     }
   },
 
@@ -486,7 +490,7 @@ const MapWithPlayer = React.createClass({
     });
 
     this.heatmap = new google.maps.visualization.HeatmapLayer({
-      data: this.state.heatmapData,
+      //data: this.state.heatmapData,
       radius: 15,
       map: this.map
     });
@@ -495,15 +499,22 @@ const MapWithPlayer = React.createClass({
   processData() {
     let timestamps = [];
     let dayLocations = [];
+    let heatmapDatasets = [];
 
     for (let row of this.props.data) {
       timestamps.push(row.Item.timestamp);
       dayLocations[row.Item.timestamp] = row.Item.locations;
+      heatmapDatasets[row.Item.timestamp] = new google.maps.MVCArray();
+
+      for (let location of row.Item.locations) {
+        heatmapDatasets[row.Item.timestamp].push(new google.maps.LatLng(location));
+      }
     }
 
     this.setState({
       timestamps,
       dayLocations,
+      heatmapDatasets,
       pointer: 0
     });
   },
@@ -523,16 +534,10 @@ const MapWithPlayer = React.createClass({
     });
   },
 
-  componentWillUpdate() {
-    this.state.heatmapData.clear();
-  },
-
   render() {
     let timestamp = this.state.timestamps[this.state.pointer];
     if (this.state.dayLocations[timestamp]) {
-      for (let location of this.state.dayLocations[timestamp]) {
-        this.state.heatmapData.push(new google.maps.LatLng(location));
-      }
+      this.heatmap.setData(this.state.heatmapDatasets[timestamp]);
     }
 
     return (
@@ -558,7 +563,7 @@ const PlayerButtons = React.createClass({
     let shouldPlay = !this.state.playing;
 
     if (shouldPlay) {
-      this.playTimer = setInterval(() => this.props.moveFwd(1), 1000);
+      this.playTimer = setInterval(() => this.props.moveFwd(1), 500);
     } else {
       clearInterval(this.playTimer);
     }
