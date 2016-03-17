@@ -12,11 +12,11 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 let ddbConsumption = 0;
 
 const db = {
+  locationsAcrossLoadingProgress: 0,
   tables: {
     grains: 'taxisg.grains',
     locations: 'taxisg.locations'
   },
-
   state: {
     grains: null,
     latestTimestamp: null
@@ -162,7 +162,6 @@ const db = {
   },
 
   locationsAcross(timestamps, step = 20) {
-    console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
         (timestamp, i) => {
@@ -170,10 +169,26 @@ const db = {
         }
       );
     }
-    let locationPromises = timestamps.map(
-      (timestamp) => this.locations(timestamp)
-    );
-    return Promise.all(locationPromises);
+    this.locationsAcrossLoadingProgress = 0;
+
+    return new Promise((resolve, reject) => {
+      const execute = (results = [], iterator = 0) => {
+        let timestamp = timestamps[iterator];
+        this.locationsAcrossLoadingProgress = Math.round((iterator + 1) / timestamps.length * 100 * 10) / 10;
+        this.locations(timestamp).then(data => {
+          results.push(data);
+
+          if (iterator < timestamps.length - 1) {
+            return execute(results, iterator + 1);
+          } else {
+            return resolve(results);
+          }
+        }, err => {
+          return reject(err);
+        });
+      }
+      execute();
+    });
   }
 }
 
@@ -268,6 +283,8 @@ const Snapshots = React.createClass({
 });
 
 const Animation = React.createClass({
+  loadingProgressTimer: null,
+
   getInitialState() {
     return {
       rangeAllowed: {
@@ -277,7 +294,8 @@ const Animation = React.createClass({
       date: null,
       grains: null,
       dayLocations: null,
-      mapLoading: false
+      mapLoading: false,
+      loadingProgress: 0
     }
   },
 
@@ -313,8 +331,10 @@ const Animation = React.createClass({
           this.setState({
             date,
             grains: data.Items,
-            mapLoading: true
+            mapLoading: true,
+            loadingProgress: 0
           });
+          this.monitorLoadingProgress();
           return db.locationsAcross(data.Items.map(
             (item) => item.timestamp
           ));
@@ -332,7 +352,8 @@ const Animation = React.createClass({
         this.setState({
           date,
           grains: cache.animations[date].grains,
-          mapLoading: true
+          mapLoading: true,
+          loadingProgress: 100
         });
 
         // Force remounting of map
@@ -346,11 +367,41 @@ const Animation = React.createClass({
     }
   },
 
+  monitorLoadingProgress() {
+    if (!this.loadingProgressTimer) {
+      this.loadingProgressTimer = setInterval(() => {
+        if (db.locationsAcrossLoadingProgress !== this.state.loadingProgress) {
+          this.setState({
+            loadingProgress: db.locationsAcrossLoadingProgress
+          });
+        }
+      }, 200);
+    }
+  },
+
+  clearLoadingProgressMonitor() {
+    if (this.loadingProgressTimer) {
+      clearInterval(this.loadingProgressTimer);
+      this.loadingProgressTimer = null;
+    }
+  },
+
   render() {
     let mapWithPlayer = '';
     if (this.state.mapLoading) {
-      mapWithPlayer = <h3 className="text-center">Loading animation data...</h3>;
+      if (this.state.loadingProgress >= 99) {
+        mapWithPlayer = <h3 className="text-center"><p>&nbsp;</p>Processing animation data...</h3>
+      } else {
+        mapWithPlayer = (
+          <h3 className="text-center">
+            <p>&nbsp;</p>
+            {this.state.loadingProgress}%<br />
+            Loading animation data...
+          </h3>
+        );
+      }
     } else {
+      this.clearLoadingProgressMonitor();
       if (this.state.dayLocations) {
         mapWithPlayer = <MapWithPlayer data={this.state.dayLocations} />
       }
@@ -411,7 +462,7 @@ const MapWithPlayer = React.createClass({
       timestamps: [],
       dayLocations: [],
       pointer: null,
-      heatmapData: new google.maps.MVCArray()
+      heatmapDatasets: []
     }
   },
 
@@ -439,7 +490,7 @@ const MapWithPlayer = React.createClass({
     });
 
     this.heatmap = new google.maps.visualization.HeatmapLayer({
-      data: this.state.heatmapData,
+      //data: this.state.heatmapData,
       radius: 15,
       map: this.map
     });
@@ -448,15 +499,22 @@ const MapWithPlayer = React.createClass({
   processData() {
     let timestamps = [];
     let dayLocations = [];
+    let heatmapDatasets = [];
 
     for (let row of this.props.data) {
       timestamps.push(row.Item.timestamp);
       dayLocations[row.Item.timestamp] = row.Item.locations;
+      heatmapDatasets[row.Item.timestamp] = new google.maps.MVCArray();
+
+      for (let location of row.Item.locations) {
+        heatmapDatasets[row.Item.timestamp].push(new google.maps.LatLng(location));
+      }
     }
 
     this.setState({
       timestamps,
       dayLocations,
+      heatmapDatasets,
       pointer: 0
     });
   },
@@ -476,21 +534,15 @@ const MapWithPlayer = React.createClass({
     });
   },
 
-  componentWillUpdate() {
-    this.state.heatmapData.clear();
-  },
-
   render() {
     let timestamp = this.state.timestamps[this.state.pointer];
     if (this.state.dayLocations[timestamp]) {
-      for (let location of this.state.dayLocations[timestamp]) {
-        this.state.heatmapData.push(new google.maps.LatLng(location));
-      }
+      this.heatmap.setData(this.state.heatmapDatasets[timestamp]);
     }
 
     return (
       <div>
-        <h3 className="text-center">{moment(timestamp * 1000).format('HH:mm:ss')}</h3>
+        <h3 className="text-center">{moment(timestamp * 1000).format('h:mm:ss a')}</h3>
         <div className="map" ref={(div) => this.mapDiv = div}></div>
         <PlayerButtons moveFwd={this.moveFwd} />
       </div>
@@ -509,9 +561,9 @@ const PlayerButtons = React.createClass({
 
   handlePlay() {
     let shouldPlay = !this.state.playing;
-    
+
     if (shouldPlay) {
-      this.playTimer = setInterval(() => this.props.moveFwd(1), 1000);
+      this.playTimer = setInterval(() => this.props.moveFwd(1), 750);
     } else {
       clearInterval(this.playTimer);
     }
@@ -793,7 +845,7 @@ const DynamoDBStatus = React.createClass({
   render() {
     return (
       <div className="dynamodb-status">
-        DynamoDB capacity units consumed: {this.state.ddbConsumption}
+        {this.state.ddbConsumption} DynamoDB capacity units consumed.
       </div>
     );
   }
