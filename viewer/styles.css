@@ -51,3 +51,7 @@ footer {
 footer p {
   margin-bottom: 2px;
 }
+
+.gm-style-mtc {
+  display: none;
+}

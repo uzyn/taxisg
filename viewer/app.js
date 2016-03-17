@@ -486,6 +486,8 @@ const MapWithPlayer = React.createClass({
       minZoom: 12,
       //maxZoom: 16,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
+      scrollwheel: false,
+      fullscreenControl: true,
       styles: styles
     });
 
@@ -727,9 +729,11 @@ const Range = React.createClass({
     let graph = null;
     if (this.state.data) {
       const options = {
+        clickCallback: (event, date) => {
+          console.log('click callback', date);
+        }
       };
       graph = <Graph grains={this.state.data.Items} options={options} />;
-      console.log(this.state.data);
     }
 
     return (
@@ -772,6 +776,8 @@ const MapArea = React.createClass({
       minZoom: 12,
       //maxZoom: 16,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
+      scrollwheel: false,
+      fullscreenControl: true,
       styles: styles
     });
 
@@ -814,10 +820,7 @@ const Graph = React.createClass({
         legend: 'always',
         showRoller: true,
         fillGraph: true,
-        dateWindow: [ moment().subtract(5, 'days'), moment() ],
-        clickCallback: (event, date) => {
-          console.log(date);
-        }
+        dateWindow: [ moment().subtract(5, 'days'), moment() ]
       }
     }
   },
