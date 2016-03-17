@@ -162,7 +162,6 @@ const db = {
   },
 
   locationsAcross(timestamps, step = 20) {
-    console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
         (timestamp, i) => {
@@ -170,10 +169,25 @@ const db = {
         }
       );
     }
-    let locationPromises = timestamps.map(
-      (timestamp) => this.locations(timestamp)
-    );
-    return Promise.all(locationPromises);
+
+    return new Promise((resolve, reject) => {
+      const execute = (results = [], iterator = 0) => {
+        let timestamp = timestamps[iterator];
+        this.locations(timestamp).then(data => {
+          results.push(data);
+
+          if (iterator < timestamps.length - 1) {
+            return execute(results, iterator + 1);
+          } else {
+            console.log('done', results);
+            return resolve(results);
+          }
+        }, err => {
+          return reject(err);
+        });
+      }
+      execute();
+    });
   }
 }
 
@@ -509,7 +523,7 @@ const PlayerButtons = React.createClass({
 
   handlePlay() {
     let shouldPlay = !this.state.playing;
-    
+
     if (shouldPlay) {
       this.playTimer = setInterval(() => this.props.moveFwd(1), 1000);
     } else {
