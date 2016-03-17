@@ -651,9 +651,18 @@ const Latest = React.createClass({
   render() {
     return (
       <div id="latest">
-        <h2>Latest</h2>
-        <h3>{this.state.count} taxis on the road</h3>
-        <p>as at {this.state.timestamp}.</p>
+        <div className="row">
+          <div className="col-md-8">
+            <h3>{this.state.count} taxis on the road</h3>
+            <h5>as at {this.state.timestamp}.</h5>
+          </div>
+          <div className="col-md-4 text-right live-button-section">
+            <div className="live-button-section-content">
+              <button type="button" className='btn btn-default'>LIVE</button>
+              <p>Live view auto refreshes every 30 seconds.</p>
+            </div>
+          </div>
+        </div>
         <MapArea locations={this.state.locations} />
       </div>
     );
@@ -696,8 +705,9 @@ const Range = React.createClass({
 
     return (
       <div>
-        <h2>Total number of taxis for the last {this.props.daysSince} days.</h2>
+        <h2 className="text-center">Snapshots from the last {this.props.daysSince} days</h2>
         {graph}
+        <p className="text-center">Click on a point on graph to view snapshot on the map below.</p>
       </div>
     );
   }
