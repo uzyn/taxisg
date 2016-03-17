@@ -12,11 +12,11 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 let ddbConsumption = 0;
 
 const db = {
+  locationsAcrossLoadingProgress: 0,
   tables: {
     grains: 'taxisg.grains',
     locations: 'taxisg.locations'
   },
-
   state: {
     grains: null,
     latestTimestamp: null
@@ -162,7 +162,6 @@ const db = {
   },
 
   locationsAcross(timestamps, step = 20) {
-    console.log(timestamps.length);
     if (step > 1) {
       timestamps = timestamps.filter(
         (timestamp, i) => {
@@ -170,10 +169,26 @@ const db = {
         }
       );
     }
-    let locationPromises = timestamps.map(
-      (timestamp) => this.locations(timestamp)
-    );
-    return Promise.all(locationPromises);
+    this.locationsAcrossLoadingProgress = 0;
+
+    return new Promise((resolve, reject) => {
+      const execute = (results = [], iterator = 0) => {
+        let timestamp = timestamps[iterator];
+        this.locationsAcrossLoadingProgress = Math.round(iterator / timestamps.length * 100 * 10) / 10;
+        this.locations(timestamp).then(data => {
+          results.push(data);
+
+          if (iterator < timestamps.length - 1) {
+            return execute(results, iterator + 1);
+          } else {
+            return resolve(results);
+          }
+        }, err => {
+          return reject(err);
+        });
+      }
+      execute();
+    });
   }
 }
 
@@ -268,6 +283,8 @@ const Snapshots = React.createClass({
 });
 
 const Animation = React.createClass({
+  loadingProgressTimer: null,
+
   getInitialState() {
     return {
       rangeAllowed: {
@@ -277,7 +294,8 @@ const Animation = React.createClass({
       date: null,
       grains: null,
       dayLocations: null,
-      mapLoading: false
+      mapLoading: false,
+      loadingProgress: 0
     }
   },
 
@@ -313,8 +331,10 @@ const Animation = React.createClass({
           this.setState({
             date,
             grains: data.Items,
-            mapLoading: true
+            mapLoading: true,
+            loadingProgress: 0
           });
+          this.monitorLoadingProgress();
           return db.locationsAcross(data.Items.map(
             (item) => item.timestamp
           ));
@@ -332,7 +352,8 @@ const Animation = React.createClass({
         this.setState({
           date,
           grains: cache.animations[date].grains,
-          mapLoading: true
+          mapLoading: true,
+          loadingProgress: 100
         });
 
         // Force remounting of map
@@ -346,11 +367,37 @@ const Animation = React.createClass({
     }
   },
 
+  monitorLoadingProgress() {
+    if (!this.loadingProgressTimer) {
+      this.loadingProgressTimer = setInterval(() => {
+        if (db.locationsAcrossLoadingProgress !== this.state.loadingProgress) {
+          this.setState({
+            loadingProgress: db.locationsAcrossLoadingProgress
+          });
+        }
+      }, 200);
+    }
+  },
+
+  clearLoadingProgressMonitor() {
+    if (this.loadingProgressTimer) {
+      clearInterval(this.loadingProgressTimer);
+      this.loadingProgressTimer = null;
+    }
+  },
+
   render() {
     let mapWithPlayer = '';
     if (this.state.mapLoading) {
-      mapWithPlayer = <h3 className="text-center">Loading animation data...</h3>;
+      mapWithPlayer = (
+        <h3 className="text-center">
+          <p>&nbsp;</p>
+          {this.state.loadingProgress}%<br />
+          Loading animation data...
+        </h3>
+      );
     } else {
+      this.clearLoadingProgressMonitor();
       if (this.state.dayLocations) {
         mapWithPlayer = <MapWithPlayer data={this.state.dayLocations} />
       }
@@ -509,7 +556,7 @@ const PlayerButtons = React.createClass({
 
   handlePlay() {
     let shouldPlay = !this.state.playing;
-    
+
     if (shouldPlay) {
       this.playTimer = setInterval(() => this.props.moveFwd(1), 1000);
     } else {
