@@ -280,12 +280,16 @@ const Snapshots = React.createClass({
   },
 
   handleGraphClick(event, timestamp) {
-    console.log('snapshots handled it!', timestamp);
+    this.setState({
+      live: false,
+      requested: Math.floor(timestamp / 1000)
+    });
   },
 
   toggleLive(event) {
     this.setState({
-      live: !this.state.live
+      live: !this.state.live,
+      requested: null
     });
   },
 
@@ -633,11 +637,12 @@ const PlayerButtons = React.createClass({
 
 const Latest = React.createClass({
   refreshTimer: null,
+  momentFormat: 'dddd, MMMM Do YYYY, h:mm:ss a',
 
   loadFromDb() {
     db.latest().then(data => {
       this.setState({
-        timestamp: moment(data.Items[0].timestamp * 1000).format('dddd, MMMM Do YYYY, h:mm:ss a'),
+        timestamp: moment(data.Items[0].timestamp * 1000).format(this.momentFormat),
         count: data.Items[0].count.toLocaleString()
       });
       return db.locations(data.Items[0].timestamp);
@@ -650,12 +655,35 @@ const Latest = React.createClass({
     });
   },
 
+  requestTimestamp(timestamp) {
+    this.setState({
+      requestHandled: timestamp
+    });
+
+    db.locations(timestamp).then(data => {
+      this.setState({
+        timestamp: moment(timestamp * 1000).format(this.momentFormat),
+        count: data.Item.locations.length,
+        locations: data.Item.locations
+      });
+    }, err => {
+      console.log(err);
+    });
+  },
+
   getInitialState() {
     return {
       timestamp: 'loading...',
       count: 'loading...',
-      locations: []
+      locations: [],
+      requestHandled: null
     };
+  },
+
+  componentWillUpdate() {
+    if (this.props.requested !== this.state.requestHandled) {
+      this.requestTimestamp(this.props.requested);
+    }
   },
 
   componentWillUnmount() {
@@ -676,9 +704,9 @@ const Latest = React.createClass({
     }
   },
 
+
   render() {
     let liveLabel = null;
-    let liveBtnChecked = '';
     if (this.props.live) {
       liveLabel = <span className="label label-danger">LIVE</span>;
       this.enableLiveTimer();
@@ -697,7 +725,7 @@ const Latest = React.createClass({
             <div className="live-button-section-content">
               <div className="live-toggle">
                 <label>
-                  <input type="checkbox" defaultChecked onChange={this.props.toggleLive} /> Live
+                  <input type="checkbox" checked={this.props.live} onChange={this.props.toggleLive} /> Live
                 </label>
               </div>
               <p>Live view auto refreshes every 30 seconds.</p>
