@@ -640,13 +640,8 @@ const Latest = React.createClass({
     };
   },
 
-  componentDidMount() {
-    this.loadFromDb();
-    this.refreshTimer = setInterval(this.loadFromDb, 30000);
-  },
-
   componentWillUnmount() {
-    clearInterval(this.refreshTimer);
+    this.disableLiveTimer();
   },
 
   toggleLiveButton(event) {
@@ -655,11 +650,28 @@ const Latest = React.createClass({
     });
   },
 
+  enableLiveTimer() {
+    if (!this.refreshTimer) {
+      this.loadFromDb(); // first immediate call
+      this.refreshTimer = setInterval(this.loadFromDb, 30000);
+    }
+  },
+
+  disableLiveTimer() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  },
+
   render() {
     let liveLabel = null;
     let liveBtnChecked = '';
     if (this.state.live) {
       liveLabel = <span className="label label-danger">LIVE</span>;
+      this.enableLiveTimer();
+    } else {
+      this.disableLiveTimer();
     }
 
     return (
