@@ -272,11 +272,28 @@ const TabContent = React.createClass({
 });
 
 const Snapshots = React.createClass({
+  getInitialState() {
+    return {
+      live: true,
+      requested: null
+    };
+  },
+
+  handleGraphClick(event, timestamp) {
+    console.log('snapshots handled it!', timestamp);
+  },
+
+  toggleLive(event) {
+    this.setState({
+      live: !this.state.live
+    });
+  },
+
   render() {
     return (
       <div>
-        <Range daysSince="14" />
-        <Latest />
+        <Range daysSince="14" clickCallback={this.handleGraphClick} />
+        <Latest live={this.state.live} requested={this.state.requested} toggleLive={this.toggleLive} />
       </div>
     );
   }
@@ -637,19 +654,12 @@ const Latest = React.createClass({
     return {
       timestamp: 'loading...',
       count: 'loading...',
-      locations: [],
-      live: true
+      locations: []
     };
   },
 
   componentWillUnmount() {
     this.disableLiveTimer();
-  },
-
-  toggleLiveButton(event) {
-    this.setState({
-      live: !this.state.live
-    });
   },
 
   enableLiveTimer() {
@@ -669,7 +679,7 @@ const Latest = React.createClass({
   render() {
     let liveLabel = null;
     let liveBtnChecked = '';
-    if (this.state.live) {
+    if (this.props.live) {
       liveLabel = <span className="label label-danger">LIVE</span>;
       this.enableLiveTimer();
     } else {
@@ -687,7 +697,7 @@ const Latest = React.createClass({
             <div className="live-button-section-content">
               <div className="live-toggle">
                 <label>
-                  <input type="checkbox" defaultChecked onChange={this.toggleLiveButton} /> Live
+                  <input type="checkbox" defaultChecked onChange={this.props.toggleLive} /> Live
                 </label>
               </div>
               <p>Live view auto refreshes every 30 seconds.</p>
@@ -729,9 +739,7 @@ const Range = React.createClass({
     let graph = null;
     if (this.state.data) {
       const options = {
-        clickCallback: (event, date) => {
-          console.log('click callback', date);
-        }
+        clickCallback: this.props.clickCallback
       };
       graph = <Graph grains={this.state.data.Items} options={options} />;
     }
