@@ -272,11 +272,32 @@ const TabContent = React.createClass({
 });
 
 const Snapshots = React.createClass({
+  getInitialState() {
+    return {
+      live: true,
+      requested: null
+    };
+  },
+
+  handleGraphClick(event, timestamp) {
+    this.setState({
+      live: false,
+      requested: Math.floor(timestamp / 1000)
+    });
+  },
+
+  toggleLive(event) {
+    this.setState({
+      live: !this.state.live,
+      requested: null
+    });
+  },
+
   render() {
     return (
       <div>
-        <Range daysSince="14" />
-        <Latest />
+        <Range daysSince="14" clickCallback={this.handleGraphClick} />
+        <Latest live={this.state.live} requested={this.state.requested} toggleLive={this.toggleLive} />
       </div>
     );
   }
@@ -486,6 +507,8 @@ const MapWithPlayer = React.createClass({
       minZoom: 12,
       //maxZoom: 16,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
+      scrollwheel: false,
+      fullscreenControl: true,
       styles: styles
     });
 
@@ -614,17 +637,33 @@ const PlayerButtons = React.createClass({
 
 const Latest = React.createClass({
   refreshTimer: null,
+  momentFormat: 'dddd, MMMM Do YYYY, h:mm:ss a',
 
   loadFromDb() {
     db.latest().then(data => {
       this.setState({
-        timestamp: moment(data.Items[0].timestamp * 1000).format('dddd, MMMM Do YYYY, h:mm:ss a'),
-        count: data.Items[0].count.toLocaleString()
+        timestamp: moment(data.Items[0].timestamp * 1000).format(this.momentFormat),
+        count: data.Items[0].count.toLocaleString(),
+        loadingRequest: false
       });
       return db.locations(data.Items[0].timestamp);
     }).then(data => {
       this.setState({
-        locations: data.Item.locations
+        locations: data.Item.locations,
+        loadingRequest: false
+      });
+    }, err => {
+      console.log(err);
+    });
+  },
+
+  requestTimestamp(timestamp) {
+    db.locations(timestamp).then(data => {
+      this.setState({
+        timestamp: moment(timestamp * 1000).format(this.momentFormat),
+        count: data.Item.locations.length,
+        locations: data.Item.locations,
+        loadingRequest: false
       });
     }, err => {
       console.log(err);
@@ -635,25 +674,80 @@ const Latest = React.createClass({
     return {
       timestamp: 'loading...',
       count: 'loading...',
-      locations: []
+      locations: [],
+      requestHandled: null,
+      loadingRequest: false
     };
   },
 
-  componentDidMount() {
-    this.loadFromDb();
-    this.refreshTimer = setInterval(this.loadFromDb, 30000);
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.requested !== this.state.requestHandled) {
+      this.requestTimestamp(nextProps.requested);
+      this.setState({
+        loadingRequest: true
+      });
+    }
   },
 
   componentWillUnmount() {
-    clearInterval(this.refreshTimer);
+    this.disableLiveTimer();
   },
 
+  enableLiveTimer() {
+    if (!this.refreshTimer) {
+      this.loadFromDb(); // first immediate call
+      this.refreshTimer = setInterval(this.loadFromDb, 30000);
+    }
+  },
+
+  disableLiveTimer() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  },
+
+
   render() {
+    let liveLabel = null;
+    if (this.props.live) {
+      liveLabel = <span className="label label-danger">LIVE</span>;
+      this.enableLiveTimer();
+    } else {
+      this.disableLiveTimer();
+    }
+
+    let status = (
+      <div>
+        <h3>{this.state.count} taxis on the road</h3>
+        <h5>as at {this.state.timestamp}. {liveLabel}</h5>
+      </div>
+    );
+    if (this.state.loadingRequest) {
+      status = (
+        <div>
+          <h3>Loading snapshot data...</h3>
+        </div>
+      );
+    };
+
     return (
       <div id="latest">
-        <h2>Latest</h2>
-        <h3>{this.state.count} taxis on the road</h3>
-        <p>as at {this.state.timestamp}.</p>
+        <div className="row">
+          <div className="col-md-8">
+            {status}
+          </div>
+          <div className="col-md-4 text-right live-button-section">
+            <div className="live-button-section-content">
+              <div className="live-toggle">
+                <label>
+                  <input type="checkbox" checked={this.props.live} onChange={this.props.toggleLive} /> Live
+                </label>
+              </div>
+              <p>Live view auto refreshes every 30 seconds.</p>
+            </div>
+          </div>
+        </div>
         <MapArea locations={this.state.locations} />
       </div>
     );
@@ -689,15 +783,16 @@ const Range = React.createClass({
     let graph = null;
     if (this.state.data) {
       const options = {
+        clickCallback: this.props.clickCallback
       };
       graph = <Graph grains={this.state.data.Items} options={options} />;
-      console.log(this.state.data);
     }
 
     return (
       <div>
-        <h2>Total number of taxis for the last {this.props.daysSince} days.</h2>
+        <h2 className="text-center">Snapshots from the last {this.props.daysSince} days</h2>
         {graph}
+        <p className="text-center">Click on a point on graph to view snapshot on the map below.</p>
       </div>
     );
   }
@@ -733,6 +828,8 @@ const MapArea = React.createClass({
       minZoom: 12,
       //maxZoom: 16,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
+      scrollwheel: false,
+      fullscreenControl: true,
       styles: styles
     });
 
@@ -775,10 +872,7 @@ const Graph = React.createClass({
         legend: 'always',
         showRoller: true,
         fillGraph: true,
-        dateWindow: [ moment().subtract(5, 'days'), moment() ],
-        clickCallback: (event, date) => {
-          console.log(date);
-        }
+        dateWindow: [ moment().subtract(5, 'days'), moment() ]
       }
     }
   },
