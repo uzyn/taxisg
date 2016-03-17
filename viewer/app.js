@@ -845,7 +845,7 @@ const DynamoDBStatus = React.createClass({
   render() {
     return (
       <div className="dynamodb-status">
-        DynamoDB capacity units consumed: {this.state.ddbConsumption}
+        {this.state.ddbConsumption} DynamoDB capacity units consumed.
       </div>
     );
   }
