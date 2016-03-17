@@ -643,12 +643,14 @@ const Latest = React.createClass({
     db.latest().then(data => {
       this.setState({
         timestamp: moment(data.Items[0].timestamp * 1000).format(this.momentFormat),
-        count: data.Items[0].count.toLocaleString()
+        count: data.Items[0].count.toLocaleString(),
+        loadingRequest: false
       });
       return db.locations(data.Items[0].timestamp);
     }).then(data => {
       this.setState({
-        locations: data.Item.locations
+        locations: data.Item.locations,
+        loadingRequest: false
       });
     }, err => {
       console.log(err);
@@ -656,15 +658,12 @@ const Latest = React.createClass({
   },
 
   requestTimestamp(timestamp) {
-    this.setState({
-      requestHandled: timestamp
-    });
-
     db.locations(timestamp).then(data => {
       this.setState({
         timestamp: moment(timestamp * 1000).format(this.momentFormat),
         count: data.Item.locations.length,
-        locations: data.Item.locations
+        locations: data.Item.locations,
+        loadingRequest: false
       });
     }, err => {
       console.log(err);
@@ -676,13 +675,17 @@ const Latest = React.createClass({
       timestamp: 'loading...',
       count: 'loading...',
       locations: [],
-      requestHandled: null
+      requestHandled: null,
+      loadingRequest: false
     };
   },
 
-  componentWillUpdate() {
-    if (this.props.requested !== this.state.requestHandled) {
-      this.requestTimestamp(this.props.requested);
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.requested !== this.state.requestHandled) {
+      this.requestTimestamp(nextProps.requested);
+      this.setState({
+        loadingRequest: true
+      });
     }
   },
 
@@ -714,12 +717,25 @@ const Latest = React.createClass({
       this.disableLiveTimer();
     }
 
+    let status = (
+      <div>
+        <h3>{this.state.count} taxis on the road</h3>
+        <h5>as at {this.state.timestamp}. {liveLabel}</h5>
+      </div>
+    );
+    if (this.state.loadingRequest) {
+      status = (
+        <div>
+          <h3>Loading snapshot data...</h3>
+        </div>
+      );
+    };
+
     return (
       <div id="latest">
         <div className="row">
           <div className="col-md-8">
-            <h3>{this.state.count} taxis on the road</h3>
-            <h5>as at {this.state.timestamp}. {liveLabel}</h5>
+            {status}
           </div>
           <div className="col-md-4 text-right live-button-section">
             <div className="live-button-section-content">
