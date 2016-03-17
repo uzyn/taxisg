@@ -39,6 +39,10 @@
   right: 14px;
 }
 
+.live-toggle label {
+  margin: 0;
+}
+
 footer {
   margin: 80px 0 30px;
   text-align: center;

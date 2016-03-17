@@ -635,7 +635,8 @@ const Latest = React.createClass({
     return {
       timestamp: 'loading...',
       count: 'loading...',
-      locations: []
+      locations: [],
+      live: true
     };
   },
 
@@ -648,17 +649,33 @@ const Latest = React.createClass({
     clearInterval(this.refreshTimer);
   },
 
+  toggleLiveButton(event) {
+    this.setState({
+      live: !this.state.live
+    });
+  },
+
   render() {
+    let liveLabel = null;
+    let liveBtnChecked = '';
+    if (this.state.live) {
+      liveLabel = <span className="label label-danger">LIVE</span>;
+    }
+
     return (
       <div id="latest">
         <div className="row">
           <div className="col-md-8">
             <h3>{this.state.count} taxis on the road</h3>
-            <h5>as at {this.state.timestamp}.</h5>
+            <h5>as at {this.state.timestamp}. {liveLabel}</h5>
           </div>
           <div className="col-md-4 text-right live-button-section">
             <div className="live-button-section-content">
-              <button type="button" className='btn btn-default'>LIVE</button>
+              <div className="live-toggle">
+                <label>
+                  <input type="checkbox" defaultChecked onChange={this.toggleLiveButton} /> Live
+                </label>
+              </div>
               <p>Live view auto refreshes every 30 seconds.</p>
             </div>
           </div>
