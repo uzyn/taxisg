@@ -865,7 +865,7 @@ const Graph = React.createClass({
         showRangeSelector: true,
         rollPeriod: 5 * 2, // 5 minutes
         rangeSelectorHeight: 50,
-        width: 1200,
+        width: 1140,
         height: 400,
         legend: 'always',
         showRoller: true,
