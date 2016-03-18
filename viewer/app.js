@@ -434,6 +434,8 @@ const Animation = React.createClass({
               minDate={moment(this.state.rangeAllowed.min * 1000)}
               maxDate={moment(this.state.rangeAllowed.max * 1000)}
               onChange={this.handleChange}
+              popoverAttachment="top center"
+              popoverTargetAttachment="bottom center"
               placeholderText="Click to select"
             />
           </h4>
