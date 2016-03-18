@@ -141,7 +141,6 @@ const db = {
   },
 
   locations(timestamp) {
-    console.log('Loading locations for ' + moment(timestamp * 1000).format());
     const params = {
       TableName: this.tables.locations,
       Key: {
@@ -341,11 +340,9 @@ const Animation = React.createClass({
     }
   },
 
-  handleChange(event) {
-    const date = event.target.value;
-    const dayStart = moment(event.target.value).startOf('day').unix();
-    const dayEnd = moment(event.target.value).endOf('day').unix();
-
+  handleChange(date) {
+    const dayStart = moment(date).startOf('day').unix();
+    const dayEnd = moment(date).endOf('day').unix();
     if (dayStart >= this.state.rangeAllowed.min && dayEnd <= this.state.rangeAllowed.max) {
       if (!cache.animations[date]) {
         db.countRange(dayStart, dayEnd).then(data => {
@@ -433,10 +430,11 @@ const Animation = React.createClass({
         <div id="animation-date-selector">
           <h2>Select date</h2>
           <h4>
-            <input type="date"
-              min={moment(this.state.rangeAllowed.min * 1000).format('YYYY-MM-DD')}
-              max={moment(this.state.rangeAllowed.max * 1000).format('YYYY-MM-DD')}
+            <DatePicker
+              minDate={moment(this.state.rangeAllowed.min * 1000)}
+              maxDate={moment(this.state.rangeAllowed.max * 1000)}
               onChange={this.handleChange}
+              placeholderText="Click to select"
             />
           </h4>
         </div>
