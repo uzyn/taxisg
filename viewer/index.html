@@ -4,20 +4,23 @@
   <meta charset="utf-8">
   <title>Singapore Taxi Data Visualization</title>
   <meta name="author" content="U-Zyn Chua">
-  <link rel="stylesheet" href="bootstrap.min.css">
+  <link rel="stylesheet" href="dependencies/bootstrap.min.css">
+  <link rel="stylesheet" href="dependencies/react-datepicker.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
+    <a href="https://github.com/uzyn/taxisg" target="_blank"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://camo.githubusercontent.com/82b228a3648bf44fc1163ef44c62fcc60081495e/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_red_aa0000.png"></a>
+
     <div id="app"></div>
 
     <footer>
       <p>Singapore taxis data viewer developed by U-Zyn Chua.</p>
-      <p>Data is obtained via deobfuscation API from a mobile app and may not represent actual data from Land Transport Authority of Singapore.</p>
+      <p>Data is obtained via deobfuscated API from <a href="https://itunes.apple.com/sg/app/taxi-taxi-sg/id939482252?mt=8" target="_blank">a mobile app</a> and may not represent actual data from Land Transport Authority of Singapore.</p>
       <p>&nbsp;</p>
       <p class="small">
-        Data is personally collected and stored on a personal AWS account. Please be gentle when use.<br>
-        If you wish to obtain the full data set, please contact me instead of brute forcing the database server.
+        Data is collected and stored on a personal AWS account. Please be gentle when use.<br>
+        If you wish to obtain the full data set, please contact me instead of brute forcing the database.
       </p>
       <p class="small"><a href="https://twitter.com/uzyn">Twitter</a> &middot; <a href="http://github.com/uzyn">GitHub</a> &middot; <a href="https://www.linkedin.com/in/uzynchua">LinkedIn</a> &middot; <a href="mailto:chua@uzyn.com">chua@uzyn.com</a></p>
 
@@ -31,6 +34,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react-dom.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDa9bguArDvjYH_MwNFSESJVQ_a39cYP-4&libraries=visualization"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+  <script src="dependencies/react-datepicker.min.js"></script>
+  <script src="dependencies/google-analytics.js"></script>
   <script src="app.js" type="text/babel"></script>
 </body>
 </html>
