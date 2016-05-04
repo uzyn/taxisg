@@ -160,7 +160,7 @@ const db = {
     });
   },
 
-  locationsAcross(timestamps, step = 20) {
+  locationsAcross(timestamps, step = 8) {
     if (step > 1) {
       timestamps = timestamps.filter(
         (timestamp, i) => {
