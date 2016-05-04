@@ -1,9 +1,11 @@
 # Singapore Taxi Data Collector and Viewer
-Unofficial SDK of taxi locations in Singapore.
+Unofficial SDK of available taxi locations in Singapore.
 
 Implemented through the unpublished API of Taxi-Taxi@SG mobile apps.
 
 We are not associated to Land Transport Authority of Singapore (LTA).
+
+Presentation deck: [Uncovering of an obfuscated public API](https://speakerdeck.com/uzyn/uncovering-of-an-obfuscated-public-governmental-api-foss-asia-2016)
 
 This repository contains 2 main components:
 
@@ -20,4 +22,5 @@ This repository contains 2 main components:
 
   1. Original API does not have cross-origin resource sharing (CORS) enabled.
   1. Original API is strongly ofuscated. Significant amount of processing needed to deofcuscate: unzip, bit manipulation and string manipulation.
+
 
