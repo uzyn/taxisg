@@ -3,6 +3,10 @@
   background-color: #fff;
 }
 
+.subtitle {
+  margin-top: -10px;
+}
+
 .map {
    height: 800px;
    width: 1140px;
