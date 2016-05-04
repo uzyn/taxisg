@@ -696,7 +696,7 @@ const Latest = React.createClass({
   enableLiveTimer() {
     if (!this.refreshTimer) {
       this.loadFromDb(); // first immediate call
-      this.refreshTimer = setInterval(this.loadFromDb, 30000);
+      this.refreshTimer = setInterval(this.loadFromDb, 60000);
     }
   },
 
@@ -719,7 +719,7 @@ const Latest = React.createClass({
 
     let status = (
       <div>
-        <h3>{this.state.count} taxis on the road</h3>
+        <h3>{this.state.count} available taxis on the road</h3>
         <h5>as at {this.state.timestamp}. {liveLabel}</h5>
       </div>
     );
@@ -744,7 +744,7 @@ const Latest = React.createClass({
                   <input type="checkbox" checked={this.props.live} onChange={this.props.toggleLive} /> Live
                 </label>
               </div>
-              <p>Live view auto refreshes every 30 seconds.</p>
+              <p>Live view auto refreshes every 1 minute.</p>
             </div>
           </div>
         </div>
@@ -790,7 +790,8 @@ const Range = React.createClass({
 
     return (
       <div>
-        <h2 className="text-center">Snapshots from the last {this.props.daysSince} days</h2>
+        <h2 className="text-center">Available taxis from the last {this.props.daysSince} days</h2>
+        <p className="text-center small subtitle">Data collected every 15 minutes.</p>
         {graph}
         <p className="text-center">Click on a point on graph to view snapshot on the map below.</p>
       </div>
@@ -863,7 +864,7 @@ const Graph = React.createClass({
   getInitialState() {
     return {
       options: {
-        labels: [ 'Time', 'Taxis' ],
+        labels: [ 'Time', 'Available taxis' ],
         showRangeSelector: true,
         rollPeriod: 5 * 2, // 5 minutes
         rangeSelectorHeight: 50,
